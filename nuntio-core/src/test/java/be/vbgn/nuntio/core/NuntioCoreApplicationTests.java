@@ -1,4 +1,4 @@
-package be.vbgn.nuntio.nuntiocore;
+package be.vbgn.nuntio.core;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
