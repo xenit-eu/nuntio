@@ -1,0 +1,36 @@
+plugins {
+    id 'org.springframework.boot' version '2.5.4'
+    id 'java'
+    id 'eu.xenit.docker' version '5.3.0'
+    id 'eu.xenit.docker-compose' version '5.3.0'
+}
+
+dependencies {
+    annotationProcessor 'org.projectlombok:lombok:1.18.20'
+    compileOnly 'org.projectlombok:lombok:1.18.20'
+
+    implementation platform(project(':nuntio-bom'))
+    implementation project(':nuntio-api')
+    implementation project(':nuntio-platform-docker')
+    implementation project(':nuntio-registry-consul')
+    implementation project(':nuntio-engine')
+    implementation 'org.springframework.boot:spring-boot-starter'
+
+    testImplementation platform('org.testcontainers:testcontainers-bom:1.16.0')
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.testcontainers:junit-jupiter'
+}
+
+createDockerFile {
+    from("docker.io/xenit/openjdk:jdk-11")
+    smartCopy(bootJar.archiveFile.map({ it.asFile }), "/nuntio.jar")
+    entryPoint("/docker-entrypoint.sh", "java", '$JAVA_OPTS', "-jar", "/nuntio.jar")
+}
+
+dockerCompose {
+    useComposeFiles = ['src/test/resources/docker-compose.yml']
+}
+
+test {
+    useJUnitPlatform()
+}

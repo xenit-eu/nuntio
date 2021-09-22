@@ -1,0 +1,85 @@
+package be.vbgn.nuntio.platform.docker;
+
+import be.vbgn.nuntio.api.SharedIdentifier;
+import be.vbgn.nuntio.api.platform.PlatformServiceDescription;
+import be.vbgn.nuntio.api.platform.PlatformServiceEvent;
+import be.vbgn.nuntio.api.platform.PlatformServiceIdentifier;
+import be.vbgn.nuntio.api.platform.ServicePlatform;
+import be.vbgn.nuntio.api.platform.stream.EventStream;
+import com.github.dockerjava.api.DockerClient;
+import com.github.dockerjava.api.exception.NotFoundException;
+import com.github.dockerjava.api.model.Container;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Component;
+
+@Slf4j
+@Component
+@ConditionalOnBean(DockerClient.class)
+public class DockerPlatform implements ServicePlatform {
+
+    private final DockerClient dockerClient;
+    private final DockerContainerServiceDescriptionFactory serviceDescriptionFactory;
+    private final DockerContainerWatcher containerWatcher;
+    private final DockerPlatformEventFactory eventFactory;
+
+    @Autowired
+    public DockerPlatform(DockerClient dockerClient,
+            DockerContainerServiceDescriptionFactory serviceDescriptionFactory,
+            @Lazy DockerContainerWatcher containerWatcher,
+            DockerPlatformEventFactory eventFactory) {
+        this.dockerClient = dockerClient;
+        this.serviceDescriptionFactory = serviceDescriptionFactory;
+        this.containerWatcher = containerWatcher;
+        this.eventFactory = eventFactory;
+    }
+
+    @Override
+    public Set<PlatformServiceDescription> findAll() {
+        List<Container> containers = dockerClient.listContainersCmd().exec();
+
+        return containers.stream()
+                .map(container -> new DockerContainerIdServiceIdentifier(container.getId()))
+                .map(this::find)
+                .flatMap(Optional::stream)
+                .collect(Collectors.toSet());
+    }
+
+    @Override
+    public Optional<PlatformServiceDescription> find(PlatformServiceIdentifier identifier) {
+        if (identifier instanceof DockerContainerIdServiceIdentifier) {
+            var containerServiceIdentifier = (DockerContainerIdServiceIdentifier) identifier;
+            try {
+                var response = dockerClient.inspectContainerCmd(containerServiceIdentifier.getContainerId())
+                        .exec();
+
+                return Optional.of(serviceDescriptionFactory.createServiceDescription(response));
+            } catch (NotFoundException e) {
+                return Optional.empty();
+            }
+        }
+        log.error("Received identifier {} of unsupported type.", identifier);
+        return Optional.empty();
+    }
+
+    @Override
+    public Optional<PlatformServiceDescription> find(SharedIdentifier sharedIdentifier) {
+        return DockerSharedIdentifier.fromSharedIdentifier(sharedIdentifier)
+                .map(DockerSharedIdentifier::getContainerId)
+                .map(DockerContainerIdServiceIdentifier::new)
+                .flatMap(this::find);
+    }
+
+    @Override
+    public EventStream<PlatformServiceEvent> eventStream() {
+        return containerWatcher.getEventStream()
+                .map(eventFactory::createEvent)
+                .flatMap(Optional::stream);
+    }
+}

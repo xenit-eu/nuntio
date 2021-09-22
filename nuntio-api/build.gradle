@@ -1,0 +1,12 @@
+plugins {
+    id 'java-library'
+}
+
+dependencies {
+    annotationProcessor 'org.projectlombok:lombok:1.18.20'
+    compileOnly 'org.projectlombok:lombok:1.18.20'
+
+    implementation platform(project(':nuntio-bom'))
+    implementation 'org.slf4j:slf4j-api'
+}
+

@@ -1,11 +1,11 @@
 allprojects {
     group 'be.vbgn.nuntio'
-   
+
     repositories {
         mavenCentral()
     }
 
-    plugins.withId('java') {
+    plugins.withId('java-base') {
         java {
             sourceCompatibility = JavaVersion.VERSION_11
         }
