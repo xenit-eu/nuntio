@@ -1,46 +1,49 @@
 package be.vbgn.nuntio.engine;
 
-import be.vbgn.nuntio.api.management.BlockingScheduledTasksManager;
 import be.vbgn.nuntio.api.platform.PlatformServiceEvent;
 import be.vbgn.nuntio.api.platform.PlatformServiceIdentifier;
 import be.vbgn.nuntio.api.platform.ServicePlatform;
 import be.vbgn.nuntio.api.registry.RegistryServiceIdentifier;
 import be.vbgn.nuntio.api.registry.ServiceRegistry;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.stream.Stream;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 @Component
 @ConditionalOnProperty(value = "nuntio.engine.live.enabled", matchIfMissing = true)
 @AllArgsConstructor(onConstructor_ = @Autowired)
 @Slf4j
-public class LiveWatchDaemon {
+public class LiveWatchDaemon implements Runnable {
 
     private ServicePlatform platform;
     private ServiceRegistry registry;
     private PlatformToRegistryMapper platformToRegistryMapper;
     private ChecksProcessor healthcheckProcessor;
     private EngineConfig engineConfig;
-    private BlockingScheduledTasksManager blockingScheduledTasksManager;
 
-
-    @Scheduled(fixedDelayString = "${nuntio.engine.live.delay:PT1S}")
-    void liveWatch() {
-        try {
-            if (engineConfig.getLive().isBlocking()) {
-                log.debug("Starting livewatch in blocking mode");
-                blockingScheduledTasksManager.registerBlockingTask(this);
-                platform.eventStream().forEachBlocking(this::handleEvent);
-            } else {
-                log.debug("Starting livewatch in polling mode");
-                platform.eventStream().forEach(this::handleEvent);
+    @Override
+    public void run() {
+        while (true) {
+            try {
+                if (engineConfig.getLive().isBlocking()) {
+                    log.debug("Starting livewatch in blocking mode");
+                    platform.eventStream().forEachBlocking(this::handleEvent);
+                } else {
+                    Instant startTime = Instant.now();
+                    log.debug("Starting livewatch in polling mode");
+                    platform.eventStream().forEach(this::handleEvent);
+                    Duration spentTime = Duration.between(startTime, Instant.now());
+                    Duration sleepTime = engineConfig.getLive().getDelay().minus(spentTime);
+                    Thread.sleep(sleepTime.toMillis());
+                }
+            } catch (Throwable e) {
+                log.error("Error during livewatch", e);
             }
-        } catch (Throwable e) {
-            log.error("Error during livewatch", e);
         }
     }
 

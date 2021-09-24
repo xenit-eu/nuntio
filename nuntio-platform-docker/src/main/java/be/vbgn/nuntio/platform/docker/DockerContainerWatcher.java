@@ -1,6 +1,5 @@
 package be.vbgn.nuntio.platform.docker;
 
-import be.vbgn.nuntio.api.management.BlockingScheduledTasksManager;
 import be.vbgn.nuntio.api.platform.stream.EventStream;
 import be.vbgn.nuntio.platform.docker.stream.QueueEventStream;
 import com.github.dockerjava.api.DockerClient;
@@ -30,19 +29,15 @@ public class DockerContainerWatcher {
     private final AtomicBoolean isWatching = new AtomicBoolean(false);
 
     private BlockingQueue<Event> events;
-    private final BlockingScheduledTasksManager blockingScheduledTasksManager;
 
     @Autowired
-    public DockerContainerWatcher(DockerClient dockerClient,
-            BlockingScheduledTasksManager blockingScheduledTasksManager) {
+    public DockerContainerWatcher(DockerClient dockerClient) {
         this.dockerClient = dockerClient;
-        this.blockingScheduledTasksManager = blockingScheduledTasksManager;
     }
 
     @Scheduled(fixedRateString = "${nuntio.docker.watch.rate:PT1S}")
     public void startWatching() {
         if (!isWatching.compareAndExchange(false, true)) {
-            blockingScheduledTasksManager.registerBlockingTask(this);
             events = new SynchronousQueue<>();
             dockerClient.eventsCmd()
                     .withEventTypeFilter(EventType.CONTAINER)
@@ -52,7 +47,6 @@ public class DockerContainerWatcher {
     }
 
     public EventStream<Event> getEventStream() {
-
         return new QueueEventStream<>(events);
     }
 

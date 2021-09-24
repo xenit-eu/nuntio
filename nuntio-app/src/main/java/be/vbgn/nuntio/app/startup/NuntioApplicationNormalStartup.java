@@ -1,6 +1,7 @@
 package be.vbgn.nuntio.app.startup;
 
 import be.vbgn.nuntio.engine.AntiEntropyDaemon;
+import be.vbgn.nuntio.engine.LiveWatchDaemon;
 import be.vbgn.nuntio.engine.PlatformServicesRegistrar;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,6 +19,7 @@ import org.springframework.stereotype.Component;
 public class NuntioApplicationNormalStartup implements ApplicationRunner {
 
     private PlatformServicesRegistrar platformServicesRegistrar;
+    private LiveWatchDaemon liveWatchDaemon;
     private ApplicationContext applicationContext;
 
     @Override
@@ -34,6 +36,11 @@ public class NuntioApplicationNormalStartup implements ApplicationRunner {
                 throw e;
             }
         }
+
+        Thread liveWatchThread = new Thread(liveWatchDaemon);
+        liveWatchThread.setName("LiveWatchDaemon");
+        liveWatchThread.setDaemon(true);
+        liveWatchThread.start();
     }
 
 }
