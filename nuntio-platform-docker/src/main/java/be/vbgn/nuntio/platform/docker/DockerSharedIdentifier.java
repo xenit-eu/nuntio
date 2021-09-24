@@ -35,9 +35,4 @@ public class DockerSharedIdentifier {
         return fromContainerIdAndPort(containerId, containerPort.orElse(""));
     }
 
-    public static SharedIdentifier fromContainerIdAndAddress(String containerId, String containerIp,
-            String containerPort) {
-        return fromContainerIdAndPort(containerId, containerIp + ":" + containerPort);
-    }
-
 }

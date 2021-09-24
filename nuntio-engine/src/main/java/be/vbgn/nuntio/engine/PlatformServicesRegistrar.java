@@ -37,7 +37,8 @@ public class PlatformServicesRegistrar {
             });
             Set<RegistryServiceDescription> registryServiceDescriptions = platformToRegistryMapper.createServices(
                     platformServiceDescription);
-            if (registryService.isEmpty()) {
+           
+            if (registryService.isEmpty() && !registryServiceDescriptions.isEmpty()) {
                 log.warn("Platform {} is not registered.", platformServiceDescription);
             }
 

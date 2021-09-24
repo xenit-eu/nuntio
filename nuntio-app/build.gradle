@@ -24,6 +24,7 @@ dependencies {
 createDockerFile {
     from("docker.io/xenit/openjdk:jdk-11")
     smartCopy(bootJar.archiveFile.map({ it.asFile }), "/nuntio.jar")
+    dependsOn(bootJar)
     entryPoint("/docker-entrypoint.sh", "java", '$JAVA_OPTS', "-jar", "/nuntio.jar")
 }
 

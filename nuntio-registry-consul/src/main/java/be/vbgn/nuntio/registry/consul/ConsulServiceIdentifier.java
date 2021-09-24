@@ -13,9 +13,11 @@ public class ConsulServiceIdentifier implements RegistryServiceIdentifier {
     SharedIdentifier sharedIdentifier;
 
     public static ConsulServiceIdentifier fromDescription(RegistryServiceDescription description) {
+        String addressAndPort = description.getAddress().map(addr -> addr + ":").orElse("") + description.getPort();
+
         return new ConsulServiceIdentifier(
                 description.getName(),
-                description.getSharedIdentifier().toHumanString(),
+                description.getSharedIdentifier().toHumanString() + "-" + addressAndPort,
                 description.getSharedIdentifier()
         );
     }

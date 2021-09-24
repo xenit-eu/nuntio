@@ -2,7 +2,6 @@ package be.vbgn.nuntio.platform.docker.config;
 
 import be.vbgn.nuntio.api.platform.PlatformServiceConfiguration;
 import be.vbgn.nuntio.api.platform.ServiceBinding;
-import be.vbgn.nuntio.platform.docker.DockerSharedIdentifier;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.InspectContainerResponse;
 import com.github.dockerjava.api.model.ContainerNetwork;
@@ -92,6 +91,14 @@ public class InternalNetworkConfigurationModifier implements ServiceConfiguratio
     public Stream<PlatformServiceConfiguration> modifyConfiguration(PlatformServiceConfiguration configuration,
             InspectContainerResponse inspectContainerResponse) {
 
+        if (inspectContainerResponse.getState().getPidLong() != 0) {
+            // Non-running containers do not have network IPs, so we can't map them to internal IP addresses
+            // Luckily, we don't need these IPs when the container is not running,
+            // because non-running containers are only ever *deregistered* as a service
+            log.debug("{} is not running, not adding port mappings", configuration);
+            return Stream.of(configuration);
+        }
+
         var containerNetworks = Optional.ofNullable(inspectContainerResponse)
                 .map(InspectContainerResponse::getNetworkSettings)
                 .map(NetworkSettings::getNetworks)
@@ -121,11 +128,7 @@ public class InternalNetworkConfigurationModifier implements ServiceConfiguratio
                         .map(internalIp -> {
                             log.debug("Replacing binding in {} with internal IP {}", configuration, internalIp);
                             ServiceBinding serviceBinding = configuration.getServiceBinding();
-                            return configuration
-                                    .withBinding(serviceBinding.withIp(internalIp))
-                                    .withIdentifier(DockerSharedIdentifier.fromContainerIdAndAddress(
-                                            inspectContainerResponse.getId(), internalIp,
-                                            serviceBinding.getPort().get()));
+                            return configuration.withBinding(serviceBinding.withIp(internalIp));
                         })
                         .stream();
         }

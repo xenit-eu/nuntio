@@ -4,11 +4,13 @@ import be.vbgn.nuntio.api.platform.stream.EventStream;
 import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
 import lombok.AllArgsConstructor;
+import lombok.NonNull;
 import lombok.SneakyThrows;
 
 @AllArgsConstructor
 public class QueueEventStream<T> implements EventStream<T> {
 
+    @NonNull
     private BlockingQueue<T> queue;
 
     @Override

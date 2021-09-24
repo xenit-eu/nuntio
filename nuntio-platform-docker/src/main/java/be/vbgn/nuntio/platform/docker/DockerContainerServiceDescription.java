@@ -22,7 +22,7 @@ public class DockerContainerServiceDescription implements PlatformServiceDescrip
     Set<PlatformServiceConfiguration> serviceConfigurations;
 
     @Override
-    @ToString.Include
+    @ToString.Include(name = "identifier")
     public DockerContainerServiceIdentifier getIdentifier() {
         String fullContainerName = response.getName();
         String shortContainerName = fullContainerName.substring(fullContainerName.lastIndexOf('/'));
@@ -31,7 +31,7 @@ public class DockerContainerServiceDescription implements PlatformServiceDescrip
     }
 
     @Override
-    @ToString.Include
+    @ToString.Include(name = "state")
     public PlatformServiceState getState() {
         var state = response.getState();
         if (state.getPaused()) {
@@ -44,7 +44,7 @@ public class DockerContainerServiceDescription implements PlatformServiceDescrip
     }
 
     @Override
-    @ToString.Include
+    @ToString.Include(name = "health")
     public Optional<PlatformServiceHealth> getHealth() {
         var healthState = Optional.ofNullable(response.getState())
                 .map(ContainerState::getHealth);

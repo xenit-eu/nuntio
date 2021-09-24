@@ -4,13 +4,11 @@ import java.util.Optional;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
-import lombok.ToString;
 import lombok.experimental.FieldDefaults;
 
 
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
-@ToString
 @EqualsAndHashCode
 public final class ServiceBinding {
 
@@ -50,6 +48,26 @@ public final class ServiceBinding {
 
     public ServiceBinding withIp(String ip) {
         return new ServiceBinding(ip, port, protocol);
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder(64);
+        sb.append("ServiceBinding(");
+        if (ip != null) {
+            sb.append(ip).append(":");
+        }
+        if (port != null) {
+            sb.append(port);
+        }
+        if (protocol != null) {
+            sb.append("/").append(protocol);
+        }
+        if (ip == null && port == null && protocol == null) {
+            sb.append("ANY");
+        }
+
+        return sb.append(")").toString();
     }
 
 }

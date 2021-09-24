@@ -4,6 +4,7 @@ import be.vbgn.nuntio.api.platform.PlatformServiceConfiguration;
 import be.vbgn.nuntio.api.platform.ServiceBinding;
 import be.vbgn.nuntio.platform.docker.DockerSharedIdentifier;
 import com.github.dockerjava.api.command.InspectContainerResponse;
+import java.util.Arrays;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.annotation.Order;
@@ -17,11 +18,18 @@ public class ExpandAnyBindingConfigurationModifier implements ServiceConfigurati
     @Override
     public Stream<PlatformServiceConfiguration> modifyConfiguration(PlatformServiceConfiguration configuration,
             InspectContainerResponse inspectContainerResponse) {
-        var exposedPorts = inspectContainerResponse.getNetworkSettings().getPorts().getBindings();
 
         if (configuration.getServiceBinding() == ServiceBinding.ANY) {
-            log.debug("Replacing {} with all exposed ports {}", configuration, exposedPorts.keySet());
-            return exposedPorts.keySet().stream()
+            // We need exposedports here
+            // * networksettings ports are cleared when the container is stopped
+            // * exposed ports from "PORT" instruction + with "--expose" + "--publish" are in this list
+            var exposedPorts = inspectContainerResponse.getConfig().getExposedPorts();
+            if (exposedPorts == null) {
+                log.warn("{} has any service binding, but has no exposed ports to map to.", configuration);
+                return Stream.empty();
+            }
+            log.debug("Replacing {} with all exposed ports {}", configuration, Arrays.asList(exposedPorts));
+            return Arrays.stream(exposedPorts)
                     .map(exposedPort -> ServiceBinding.fromPortAndProtocol(exposedPort.getPort(),
                             exposedPort.getProtocol().toString()))
                     .map(binding -> configuration

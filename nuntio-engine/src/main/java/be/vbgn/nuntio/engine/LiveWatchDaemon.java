@@ -1,5 +1,6 @@
 package be.vbgn.nuntio.engine;
 
+import be.vbgn.nuntio.api.management.BlockingScheduledTasksManager;
 import be.vbgn.nuntio.api.platform.PlatformServiceEvent;
 import be.vbgn.nuntio.api.platform.PlatformServiceIdentifier;
 import be.vbgn.nuntio.api.platform.ServicePlatform;
@@ -24,15 +25,22 @@ public class LiveWatchDaemon {
     private PlatformToRegistryMapper platformToRegistryMapper;
     private ChecksProcessor healthcheckProcessor;
     private EngineConfig engineConfig;
+    private BlockingScheduledTasksManager blockingScheduledTasksManager;
+
 
     @Scheduled(fixedDelayString = "${nuntio.engine.live.delay:PT1S}")
     void liveWatch() {
-        if (engineConfig.getLive().isBlocking()) {
-            log.trace("Starting livewatch in blocking mode");
-            platform.eventStream().forEachBlocking(this::handleEvent);
-        } else {
-            log.trace("Starting livewatch in polling mode");
-            platform.eventStream().forEach(this::handleEvent);
+        try {
+            if (engineConfig.getLive().isBlocking()) {
+                log.debug("Starting livewatch in blocking mode");
+                blockingScheduledTasksManager.registerBlockingTask(this);
+                platform.eventStream().forEachBlocking(this::handleEvent);
+            } else {
+                log.debug("Starting livewatch in polling mode");
+                platform.eventStream().forEach(this::handleEvent);
+            }
+        } catch (Throwable e) {
+            log.error("Error during livewatch", e);
         }
     }
 
@@ -72,7 +80,7 @@ public class LiveWatchDaemon {
         return platform.find(identifier)
                 .stream()
                 .flatMap(platformServiceDescription -> platformServiceDescription.getServiceConfigurations().stream())
-                .flatMap(serviceConfiguration -> registry.find(serviceConfiguration.getSharedIdentifier()).stream());
+                .flatMap(serviceConfiguration -> registry.findAll(serviceConfiguration.getSharedIdentifier()).stream());
     }
 
 }

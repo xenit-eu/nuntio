@@ -46,11 +46,11 @@ public class ConsulRegistry implements ServiceRegistry {
     }
 
     @Override
-    public Optional<RegistryServiceIdentifier> find(SharedIdentifier sharedIdentifier) {
+    public Set<RegistryServiceIdentifier> findAll(SharedIdentifier sharedIdentifier) {
         return findServices()
                 .stream()
                 .filter(serviceIdentifier -> Objects.equals(serviceIdentifier.getSharedIdentifier(), sharedIdentifier))
-                .findFirst();
+                .collect(Collectors.toSet());
     }
 
     @Override
@@ -69,7 +69,7 @@ public class ConsulRegistry implements ServiceRegistry {
         newService.setTags(new ArrayList<>(description.getTags()));
         Map<String, String> metadata = new HashMap<>(description.getMetadata());
 
-        metadata.put(NUNTIO_SID, description.getSharedIdentifier().toString());
+        metadata.put(NUNTIO_SID, description.getSharedIdentifier().toMachineString());
 
         newService.setMeta(metadata);
 
@@ -90,8 +90,10 @@ public class ConsulRegistry implements ServiceRegistry {
         }
     }
 
-    private static String createCheckId(RegistryServiceIdentifier registryServiceIdentifier, CheckType checkType) {
-        return registryServiceIdentifier.getSharedIdentifier().withParts(checkType.getCheckId()).toString();
+    private static String createCheckId(ConsulServiceIdentifier registryServiceIdentifier, CheckType checkType) {
+        return registryServiceIdentifier.getSharedIdentifier()
+                .withParts(registryServiceIdentifier.getServiceId(), checkType.getCheckId())
+                .toMachineString();
     }
 
     @Override
@@ -101,7 +103,7 @@ public class ConsulRegistry implements ServiceRegistry {
             var consulServiceIdentifier = (ConsulServiceIdentifier) serviceIdentifier;
             NewCheck newCheck = new NewCheck();
 
-            newCheck.setId(createCheckId(serviceIdentifier, checkType));
+            newCheck.setId(createCheckId(consulServiceIdentifier, checkType));
             newCheck.setServiceId(consulServiceIdentifier.getServiceId());
             newCheck.setName(checkType.getTitle());
             newCheck.setNotes(checkType.getDescription());
@@ -119,30 +121,35 @@ public class ConsulRegistry implements ServiceRegistry {
 
     @Override
     public void unregisterCheck(RegistryServiceIdentifier serviceIdentifier, CheckType checkType) {
-        log.debug("Deregistering check {}:{}", serviceIdentifier, checkType);
-        consulClient.agentCheckDeregister(createCheckId(serviceIdentifier, checkType), consulConfig.getToken());
-        log.debug("Deregistered check {}:{}", serviceIdentifier, checkType);
+        if (serviceIdentifier instanceof ConsulServiceIdentifier) {
+            log.debug("Deregistering check {}:{}", serviceIdentifier, checkType);
+            consulClient.agentCheckDeregister(createCheckId((ConsulServiceIdentifier) serviceIdentifier, checkType),
+                    consulConfig.getToken());
+            log.debug("Deregistered check {}:{}", serviceIdentifier, checkType);
+        }
     }
 
     @Override
     public void updateCheck(RegistryServiceIdentifier serviceIdentifier, CheckType checkType, CheckStatus checkStatus,
             String message) {
-        log.debug("Updating check {}:{} with {}", serviceIdentifier, checkType, checkStatus);
-        registerCheck(serviceIdentifier, checkType);
+        if (serviceIdentifier instanceof ConsulServiceIdentifier) {
+            log.debug("Updating check {}:{} with {}", serviceIdentifier, checkType, checkStatus);
+            registerCheck(serviceIdentifier, checkType);
 
-        String checkId = createCheckId(serviceIdentifier, checkType);
+            String checkId = createCheckId((ConsulServiceIdentifier) serviceIdentifier, checkType);
 
-        switch (checkStatus) {
-            case FAILING:
-                consulClient.agentCheckFail(checkId, message, consulConfig.getToken());
-                break;
-            case WARNING:
-                consulClient.agentCheckWarn(checkId, message, consulConfig.getToken());
-                break;
-            case PASSING:
-                consulClient.agentCheckPass(checkId, message, consulConfig.getToken());
-                break;
+            switch (checkStatus) {
+                case FAILING:
+                    consulClient.agentCheckFail(checkId, message, consulConfig.getToken());
+                    break;
+                case WARNING:
+                    consulClient.agentCheckWarn(checkId, message, consulConfig.getToken());
+                    break;
+                case PASSING:
+                    consulClient.agentCheckPass(checkId, message, consulConfig.getToken());
+                    break;
+            }
+            log.debug("Updated check {}:{} with {}", serviceIdentifier, checkType, checkStatus);
         }
-        log.debug("Updated check {}:{} with {}", serviceIdentifier, checkType, checkStatus);
     }
 }
