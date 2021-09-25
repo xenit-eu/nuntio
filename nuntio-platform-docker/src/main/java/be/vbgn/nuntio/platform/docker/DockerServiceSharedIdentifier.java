@@ -9,9 +9,9 @@ import lombok.Value;
 
 @AllArgsConstructor
 @Value
-public class DockerSharedIdentifier {
+public class DockerServiceSharedIdentifier {
 
-    private static final String SHARED_IDENTIFIER_ID = DockerSharedIdentifier.class.getName();
+    private static final String SHARED_IDENTIFIER_ID = DockerServiceSharedIdentifier.class.getName();
     String containerId;
     @Getter(value = AccessLevel.NONE)
     String containerPort;
@@ -20,15 +20,15 @@ public class DockerSharedIdentifier {
         return SharedIdentifier.of(SHARED_IDENTIFIER_ID, containerId, containerPort);
     }
 
-    public static Optional<DockerSharedIdentifier> fromSharedIdentifier(SharedIdentifier sharedIdentifier) {
+    public static Optional<DockerServiceSharedIdentifier> fromSharedIdentifier(SharedIdentifier sharedIdentifier) {
         if (!sharedIdentifier.getContext().equals(SHARED_IDENTIFIER_ID)) {
             return Optional.empty();
         }
-        return Optional.of(new DockerSharedIdentifier(sharedIdentifier.part(0), sharedIdentifier.part(1)));
+        return Optional.of(new DockerServiceSharedIdentifier(sharedIdentifier.part(0), sharedIdentifier.part(1)));
     }
 
     public static SharedIdentifier fromContainerIdAndPort(String containerId, String containerPort) {
-        return new DockerSharedIdentifier(containerId, containerPort).toSharedIdentifier();
+        return new DockerServiceSharedIdentifier(containerId, containerPort).toSharedIdentifier();
     }
 
     public static SharedIdentifier fromContainerIdAndPort(String containerId, Optional<String> containerPort) {

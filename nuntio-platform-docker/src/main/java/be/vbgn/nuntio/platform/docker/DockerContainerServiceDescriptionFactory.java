@@ -70,7 +70,6 @@ public class DockerContainerServiceDescriptionFactory {
                     .collect(Collectors.toMap(entry -> entry.getKey().getAdditional(), Entry::getValue));
 
             services.map(service -> new PlatformServiceConfiguration(
-                            DockerSharedIdentifier.fromContainerIdAndPort(containerId, bindingListEntry.getKey().getPort()),
                             bindingListEntry.getKey(),
                             service,
                             tags,

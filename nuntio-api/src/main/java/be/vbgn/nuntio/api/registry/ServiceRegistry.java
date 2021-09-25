@@ -2,9 +2,7 @@ package be.vbgn.nuntio.api.registry;
 
 import be.vbgn.nuntio.api.SharedIdentifier;
 import be.vbgn.nuntio.api.platform.PlatformServiceDescription;
-import java.util.Collection;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 public interface ServiceRegistry {
 
@@ -13,11 +11,7 @@ public interface ServiceRegistry {
     Set<RegistryServiceIdentifier> findAll(SharedIdentifier sharedIdentifier);
 
     default Set<RegistryServiceIdentifier> findAll(PlatformServiceDescription platformServiceDescription) {
-        return platformServiceDescription.getServiceConfigurations()
-                .stream()
-                .map(configuration -> findAll(configuration.getSharedIdentifier()))
-                .flatMap(Collection::stream)
-                .collect(Collectors.toSet());
+        return findAll(platformServiceDescription.getIdentifier().getSharedIdentifier());
     }
 
     RegistryServiceIdentifier registerService(RegistryServiceDescription description);

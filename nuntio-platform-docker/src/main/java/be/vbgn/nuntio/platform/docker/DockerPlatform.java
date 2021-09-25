@@ -70,9 +70,7 @@ public class DockerPlatform implements ServicePlatform {
 
     @Override
     public Optional<PlatformServiceDescription> find(SharedIdentifier sharedIdentifier) {
-        return DockerSharedIdentifier.fromSharedIdentifier(sharedIdentifier)
-                .map(DockerSharedIdentifier::getContainerId)
-                .map(DockerContainerIdServiceIdentifier::new)
+        return DockerContainerIdServiceIdentifier.fromSharedIdentifier(sharedIdentifier)
                 .flatMap(this::find);
     }
 

@@ -2,7 +2,6 @@ package be.vbgn.nuntio.platform.docker.config;
 
 import be.vbgn.nuntio.api.platform.PlatformServiceConfiguration;
 import be.vbgn.nuntio.api.platform.ServiceBinding;
-import be.vbgn.nuntio.platform.docker.DockerSharedIdentifier;
 import com.github.dockerjava.api.command.InspectContainerResponse;
 import java.util.Arrays;
 import java.util.stream.Stream;
@@ -32,12 +31,7 @@ public class ExpandAnyBindingConfigurationModifier implements ServiceConfigurati
             return Arrays.stream(exposedPorts)
                     .map(exposedPort -> ServiceBinding.fromPortAndProtocol(exposedPort.getPort(),
                             exposedPort.getProtocol().toString()))
-                    .map(binding -> configuration
-                            .withBinding(binding)
-                            .withIdentifier(
-                                    DockerSharedIdentifier.fromContainerIdAndPort(inspectContainerResponse.getId(),
-                                            binding.getPort()))
-                    );
+                    .map(binding -> configuration.withBinding(binding));
         }
         return Stream.of(configuration);
     }

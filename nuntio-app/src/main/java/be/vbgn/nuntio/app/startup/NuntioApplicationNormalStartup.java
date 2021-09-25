@@ -3,7 +3,6 @@ package be.vbgn.nuntio.app.startup;
 import be.vbgn.nuntio.engine.AntiEntropyDaemon;
 import be.vbgn.nuntio.engine.LiveWatchDaemon;
 import be.vbgn.nuntio.engine.PlatformServicesRegistrar;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
@@ -13,7 +12,6 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
 @Component
-@AllArgsConstructor(onConstructor_ = @Autowired)
 @Slf4j
 @ConditionalOnMissingBean(NuntioApplicationStartup.class)
 public class NuntioApplicationNormalStartup implements ApplicationRunner {
@@ -22,8 +20,30 @@ public class NuntioApplicationNormalStartup implements ApplicationRunner {
     private LiveWatchDaemon liveWatchDaemon;
     private ApplicationContext applicationContext;
 
+    @Autowired
+    public NuntioApplicationNormalStartup(
+            PlatformServicesRegistrar platformServicesRegistrar,
+            @Autowired(required = false) LiveWatchDaemon liveWatchDaemon,
+            ApplicationContext applicationContext
+    ) {
+        this.platformServicesRegistrar = platformServicesRegistrar;
+        this.liveWatchDaemon = liveWatchDaemon;
+        this.applicationContext = applicationContext;
+    }
+
+
     @Override
     public void run(ApplicationArguments args) {
+        if (liveWatchDaemon != null) {
+            log.info("Starting live watch daemon thread");
+            Thread liveWatchThread = new Thread(liveWatchDaemon);
+            liveWatchThread.setName("LiveWatchDaemon");
+            liveWatchThread.setDaemon(true);
+            liveWatchThread.start();
+        } else {
+            log.info("Live watching is not enabled");
+        }
+
         log.info("Running existing services registration at application startup");
         try {
             platformServicesRegistrar.registerPlatformServices();
@@ -37,10 +57,6 @@ public class NuntioApplicationNormalStartup implements ApplicationRunner {
             }
         }
 
-        Thread liveWatchThread = new Thread(liveWatchDaemon);
-        liveWatchThread.setName("LiveWatchDaemon");
-        liveWatchThread.setDaemon(true);
-        liveWatchThread.start();
     }
 
 }

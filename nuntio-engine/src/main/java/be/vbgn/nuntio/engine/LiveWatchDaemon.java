@@ -1,13 +1,11 @@
 package be.vbgn.nuntio.engine;
 
 import be.vbgn.nuntio.api.platform.PlatformServiceEvent;
-import be.vbgn.nuntio.api.platform.PlatformServiceIdentifier;
 import be.vbgn.nuntio.api.platform.ServicePlatform;
 import be.vbgn.nuntio.api.registry.RegistryServiceIdentifier;
 import be.vbgn.nuntio.api.registry.ServiceRegistry;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.stream.Stream;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,7 +48,7 @@ public class LiveWatchDaemon implements Runnable {
     private void handleEvent(PlatformServiceEvent platformServiceEvent) {
         switch (platformServiceEvent.getEventType()) {
             case STOP:
-                findServiceRegistryIdentifiers(platformServiceEvent.getIdentifier())
+                registry.findAll(platformServiceEvent.getIdentifier().getSharedIdentifier())
                         .forEach(registry::unregisterService);
                 break;
             case START:
@@ -77,13 +75,4 @@ public class LiveWatchDaemon implements Runnable {
 
         }
     }
-
-
-    public Stream<RegistryServiceIdentifier> findServiceRegistryIdentifiers(PlatformServiceIdentifier identifier) {
-        return platform.find(identifier)
-                .stream()
-                .flatMap(platformServiceDescription -> platformServiceDescription.getServiceConfigurations().stream())
-                .flatMap(serviceConfiguration -> registry.findAll(serviceConfiguration.getSharedIdentifier()).stream());
-    }
-
 }
