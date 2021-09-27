@@ -91,7 +91,7 @@ public class InternalNetworkConfigurationModifier implements ServiceConfiguratio
     public Stream<PlatformServiceConfiguration> modifyConfiguration(PlatformServiceConfiguration configuration,
             InspectContainerResponse inspectContainerResponse) {
 
-        if (inspectContainerResponse.getState().getPidLong() != 0) {
+        if (inspectContainerResponse.getState().getPidLong() == 0) {
             // Non-running containers do not have network IPs, so we can't map them to internal IP addresses
             // Luckily, we don't need these IPs when the container is not running,
             // because non-running containers are only ever *deregistered* as a service

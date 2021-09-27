@@ -3,7 +3,10 @@ package be.vbgn.nuntio.platform.docker.config;
 import be.vbgn.nuntio.api.platform.PlatformServiceConfiguration;
 import be.vbgn.nuntio.api.platform.ServiceBinding;
 import com.github.dockerjava.api.command.InspectContainerResponse;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -20,7 +23,7 @@ public class PublishedPortConfigurationModifier implements ServiceConfigurationM
     @Override
     public Stream<PlatformServiceConfiguration> modifyConfiguration(PlatformServiceConfiguration configuration,
             InspectContainerResponse inspectContainerResponse) {
-        if (inspectContainerResponse.getState().getPidLong() != 0) {
+        if (inspectContainerResponse.getState().getPidLong() == 0) {
             // Non-running containers do not have host port bindings, so we can't map them to internal IP addresses
             // Luckily, we don't need these IPs when the container is not running,
             // because non-running containers are only ever *deregistered* as a service
@@ -28,11 +31,13 @@ public class PublishedPortConfigurationModifier implements ServiceConfigurationM
             return Stream.of(configuration);
         }
 
-        var portBindings = inspectContainerResponse.getHostConfig().getPortBindings().getBindings();
+        var portBindings = inspectContainerResponse.getNetworkSettings().getPorts().getBindings();
         if (log.isDebugEnabled()) {
             var logPortBindings = portBindings.entrySet()
                     .stream()
-                    .collect(Collectors.toMap(Entry::getKey, entry -> Arrays.asList(entry.getValue())));
+                    .collect(Collectors.toMap(Entry::getKey,
+                            entry -> entry.getValue() == null ? Collections.emptyList()
+                                    : Arrays.asList(entry.getValue())));
 
             log.debug("Replacing binding in {} with published ports {}", configuration, logPortBindings);
         }
@@ -47,18 +52,37 @@ public class PublishedPortConfigurationModifier implements ServiceConfigurationM
                 .map(Entry::getValue)
                 .filter(Objects::nonNull)
                 .flatMap(Arrays::stream)
+                .map(binding -> {
+                    ServiceBinding publishedServiceBinding = ServiceBinding.fromPortAndProtocol(
+                            binding.getHostPortSpec(), configuration.getServiceBinding().getProtocol().orElse("tcp"));
+                    if (hasUsefulIp(binding.getHostIp())) {
+                        return publishedServiceBinding.withIp(binding.getHostIp());
+                    }
+                    return publishedServiceBinding;
+                })
                 .collect(Collectors.toSet());
 
         if (allBindings.isEmpty()) {
             log.warn("{} has no published port mapping to {}.", configuration, configuration.getServiceBinding());
         } else if (allBindings.size() > 1) {
-            log.warn("{} has multiple published ports {} for binding {}. Mapping to all", configuration, allBindings,
-                    configuration.getServiceBinding());
+            log.warn("{} has multiple published port mappings to {}. Created bindings {}", configuration,
+                    configuration.getServiceBinding(),
+                    allBindings);
         }
 
         return allBindings
                 .stream()
-                .map(binding -> configuration.withBinding(ServiceBinding.fromPortAndProtocol(binding.getHostPortSpec(),
-                        configuration.getServiceBinding().getProtocol().orElse("tcp"))));
+                .map(binding -> configuration.withBinding(binding)
+                        .withInternalMetadata("docker-internal-port", serviceBinding.toString()));
+    }
+
+
+    private static boolean hasUsefulIp(String ip) {
+        try {
+            InetAddress address = InetAddress.getByName(ip);
+            return !address.isAnyLocalAddress();
+        } catch (UnknownHostException e) {
+            return true;
+        }
     }
 }
