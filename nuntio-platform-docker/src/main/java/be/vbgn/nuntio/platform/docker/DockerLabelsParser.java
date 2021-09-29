@@ -16,6 +16,17 @@ import lombok.Getter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+/**
+ * Parses a docker label for nuntio into its constituents.
+ * <p>
+ * The label is built up like {labelPrefix}/{serviceBinding?}/{labelKind}/{additional?}
+ * <p>
+ * Examples:
+ * * nuntio/service
+ * * nuntio/80/service
+ * * nuntio/tcp:80/tags
+ * * nuntio/udp:65/metadata/my-metadata
+ */
 @Component
 public class DockerLabelsParser {
 
@@ -27,21 +38,23 @@ public class DockerLabelsParser {
 
     static {
         String labelKindNoAdditionalPattern =
-                "(?<labelKind>" + Arrays.stream(Label.values()).filter(Predicate.not(Label::isAcceptsAdditional))
-                        .map(Label::getLabelKind).collect(
-                                Collectors.joining("|")) + ")";
+                "(?<labelKind>" + createLabelPattern(Predicate.not(Label::isAcceptsAdditional)) + ")";
         String labelKindWithAdditionalPattern =
-                "(?<labelKind>" + Arrays.stream(Label.values()).filter(Label::isAcceptsAdditional)
-                        .map(Label::getLabelKind).collect(
-                                Collectors.joining("|")) + ")";
-        String serviceBindingPattern = "(?<serviceBindingPort>[0-9]+)(?:/(?<serviceBindingProtocol>udp|tcp))?";
+                "(?<labelKind>" + createLabelPattern(Label::isAcceptsAdditional) + ")";
+        String serviceBindingPattern = "(?:(?<serviceBindingProtocol>udp|tcp):)?(?<serviceBindingPort>[0-9]+)";
         LABEL_WITHOUT_ADDITIONAL_PATTERN = Pattern.compile(
-                "^" + labelKindNoAdditionalPattern + "(?:/" + serviceBindingPattern + ")?$");
+                "^(?:" + serviceBindingPattern + "/)?" + labelKindNoAdditionalPattern + "$");
 
         String additionalPattern = "/(?<labelAdditional>.*)";
 
         LABEL_WITH_ADDITIONAL_PATTERN = Pattern.compile(
-                "^" + labelKindWithAdditionalPattern + "(?:/" + serviceBindingPattern + ")?" + additionalPattern + "$");
+                "^(?:" + serviceBindingPattern + "/)?" + labelKindWithAdditionalPattern + additionalPattern + "$");
+    }
+
+    private static String createLabelPattern(Predicate<? super Label> filter) {
+        return Arrays.stream(Label.values()).filter(filter)
+                .map(Label::getLabelKind).collect(
+                        Collectors.joining("|"));
     }
 
     public DockerLabelsParser(@Value("${nuntio.docker.label-prefix}") String labelPrefix) {
@@ -88,9 +101,6 @@ public class DockerLabelsParser {
         return parsedLabels;
     }
 
-    /**
-     * Label is built up like {labelPrefix}/{labelKind}(/{serviceBinding})?({labelSuffix}{additional})?
-     */
     private Optional<ParsedLabel> parseLabel(String label) {
         String labelPrefix = this.labelPrefix + "/";
 
@@ -122,11 +132,11 @@ public class DockerLabelsParser {
         if (serviceBindingPort == null || serviceBindingPort.isEmpty()) {
             return ServiceBinding.ANY;
         }
-        if (serviceBindingProtocol != null && serviceBindingProtocol.isEmpty()) {
-            return ServiceBinding.fromPortAndProtocol(serviceBindingPort, serviceBindingProtocol);
+        if (serviceBindingProtocol == null || serviceBindingProtocol.isEmpty()) {
+            return ServiceBinding.fromPort(serviceBindingPort);
         }
 
-        return ServiceBinding.fromPort(serviceBindingPort);
+        return ServiceBinding.fromPortAndProtocol(serviceBindingPort, serviceBindingProtocol);
     }
 
 

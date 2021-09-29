@@ -6,17 +6,24 @@ import java.util.Map;
 import java.util.Set;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Singular;
 import lombok.Value;
 
 
 @Value
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
+@Builder(toBuilder = true)
 public class PlatformServiceConfiguration {
 
     ServiceBinding serviceBinding;
+    @Singular
     Set<String> serviceNames;
+    @Singular
     Set<String> serviceTags;
+    @Singular("serviceMetadata")
     Map<String, String> serviceMetadata;
+    @Singular("internalMetadata")
     Map<String, String> internalMetadata;
 
     public PlatformServiceConfiguration(ServiceBinding serviceBinding, Set<String> serviceNames,

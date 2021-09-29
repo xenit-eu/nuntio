@@ -25,7 +25,7 @@ public class DockerContainerServiceDescription implements PlatformServiceDescrip
     @ToString.Include(name = "identifier")
     public DockerContainerServiceIdentifier getIdentifier() {
         String fullContainerName = response.getName();
-        String shortContainerName = fullContainerName.substring(fullContainerName.lastIndexOf('/'));
+        String shortContainerName = fullContainerName.substring(fullContainerName.lastIndexOf('/') + 1);
         return new DockerContainerServiceIdentifier(shortContainerName,
                 response.getId());
     }

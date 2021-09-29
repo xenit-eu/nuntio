@@ -18,12 +18,14 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
 @AllArgsConstructor(onConstructor_ = @Autowired)
+@Slf4j
 @Component
 public class DockerContainerServiceDescriptionFactory {
 
@@ -38,7 +40,7 @@ public class DockerContainerServiceDescriptionFactory {
     }
 
     private Set<PlatformServiceConfiguration> createConfiguration(InspectContainerResponse response) {
-        return createConfiguration(response.getConfig().getLabels(), response.getId())
+        return createConfiguration(response.getConfig().getLabels())
                 .stream()
                 .flatMap(configuration -> {
                     var optionalConfig = Stream.of(configuration);
@@ -50,7 +52,7 @@ public class DockerContainerServiceDescriptionFactory {
                 .collect(Collectors.toSet());
     }
 
-    private Set<PlatformServiceConfiguration> createConfiguration(Map<String, String> labels, String containerId) {
+    private Set<PlatformServiceConfiguration> createConfiguration(Map<String, String> labels) {
         var bindingsWithConfiguration = labelsParser.parseLabels(labels)
                 .entrySet()
                 .stream()
@@ -69,7 +71,16 @@ public class DockerContainerServiceDescriptionFactory {
             var metadata = findLabelsOfType(bindingListEntry.getValue(), Label.METADATA)
                     .collect(Collectors.toMap(entry -> entry.getKey().getAdditional(), Entry::getValue));
 
-            services.map(service -> new PlatformServiceConfiguration(
+            if (services.isEmpty()) {
+                log.warn("Binding {} is missing a service but has other configurations.",
+                        bindingListEntry.getKey());
+            } else if (services.get().isEmpty()) {
+                log.warn("Binding {} has no service names.", bindingListEntry.getKey());
+            }
+
+            services
+                    .filter(service -> !service.isEmpty())
+                    .map(service -> new PlatformServiceConfiguration(
                             bindingListEntry.getKey(),
                             service,
                             tags,

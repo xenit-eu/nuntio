@@ -37,7 +37,7 @@ public final class SharedIdentifier {
                     if (!encodedPart.startsWith(ENCODED_PART_PREFIX)) {
                         return encodedPart;
                     }
-                    return new String(DECODER.decode(encodedPart.substring(1)));
+                    return new String(DECODER.decode(encodedPart.substring(ENCODED_PART_PREFIX.length())));
                 })
                 .toArray(String[]::new));
     }

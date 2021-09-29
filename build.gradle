@@ -5,9 +5,13 @@ allprojects {
         mavenCentral()
     }
 
-    plugins.withId('java-base') {
+
+    plugins.withType(JavaBasePlugin.class) {
+        project.apply plugin: "jacoco"
+
         java {
             sourceCompatibility = JavaVersion.VERSION_11
         }
     }
+
 }
