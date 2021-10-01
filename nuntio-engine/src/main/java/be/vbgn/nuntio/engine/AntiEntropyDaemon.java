@@ -5,7 +5,6 @@ import be.vbgn.nuntio.api.registry.RegistryServiceIdentifier;
 import be.vbgn.nuntio.api.registry.ServiceRegistry;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Scheduled;
 
 @AllArgsConstructor
 @Slf4j
@@ -16,7 +15,6 @@ public class AntiEntropyDaemon {
     private ChecksProcessor healthcheckProcessor;
     private PlatformServicesRegistrar platformServicesRegistrar;
 
-    @Scheduled(fixedDelayString = "${nuntio.engine.anti-entropy.delay:PT1M}", initialDelayString = "${nuntio.engine.anti-entropy.delay:PT1M}")
     public void runAntiEntropy() {
         try {
             log.debug("Running anti-entropy");
