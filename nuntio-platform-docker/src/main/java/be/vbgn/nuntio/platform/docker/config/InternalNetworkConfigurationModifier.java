@@ -5,13 +5,13 @@ import be.vbgn.nuntio.api.platform.ServiceBinding;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.InspectContainerResponse;
 import com.github.dockerjava.api.model.ContainerNetwork;
+import com.github.dockerjava.api.model.Network;
 import com.github.dockerjava.api.model.NetworkSettings;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -31,20 +31,34 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class InternalNetworkConfigurationModifier implements ServiceConfigurationModifier {
 
-    private final DockerClient dockerClient;
+    @FunctionalInterface
+    public interface DockerNetworksFetcher {
 
+        Stream<String> getNetworkIdsMatching(Map<String, Set<String>> filter);
+    }
 
-    private final String networkFilter;
+    private final DockerNetworksFetcher networksFetcher;
+
+    private final Map<String, Set<String>> networkFilter;
 
     private volatile Map<String, Boolean> networkNamesCache;
+    private final Object networkNamesCacheLock = new Object();
 
     public InternalNetworkConfigurationModifier(@Autowired DockerClient dockerClient,
             @Value("${nuntio.docker.bind.filter:}") String networkFilter) {
-        this.dockerClient = dockerClient;
-        this.networkFilter = networkFilter;
+        this(filter -> {
+            var networksCmd = dockerClient.listNetworksCmd();
+            filter.forEach(networksCmd::withFilter);
+            return networksCmd.exec().stream().map(Network::getId);
+        }, networkFilter);
     }
 
-    private Map<String, Set<String>> createFilters() {
+    public InternalNetworkConfigurationModifier(DockerNetworksFetcher networksFetcher, String networkFilter) {
+        this.networksFetcher = networksFetcher;
+        this.networkFilter = createFilters(networkFilter);
+    }
+
+    private static Map<String, Set<String>> createFilters(String networkFilter) {
         return Arrays.stream(networkFilter.split(","))
                 .filter(Predicate.not(String::isEmpty))
                 .map(filterSpec -> filterSpec.split("=", 2))
@@ -56,32 +70,35 @@ public class InternalNetworkConfigurationModifier implements ServiceConfiguratio
     }
 
     private synchronized void updateNetworkNames() {
-        Map<String, Set<String>> filters = createFilters();
-        log.info("Updating list of network names (filtered by {})", filters);
+        log.info("Updating list of network names (filtered by {})", networkFilter);
 
-        var networksCmd = dockerClient.listNetworksCmd();
-
-        var networkNames = networksCmd.exec()
-                .stream()
-                .flatMap(network -> Stream.of(network.getName(), network.getId()))
+        // Fill cache with all network names & ids, mapping to "not matching"
+        var networkNames = networksFetcher.getNetworkIdsMatching(Collections.emptyMap())
                 .collect(Collectors.toMap(Function.identity(), _network -> false));
 
-        filters.forEach(networksCmd::withFilter);
-
-        networksCmd.exec()
+        // Execute command again with the filters to apply
+        // Now map all names & ids that we got by filtering to "matching"
+        networksFetcher.getNetworkIdsMatching(networkFilter)
                 .forEach(network -> {
-                    networkNames.put(network.getName(), true);
-                    networkNames.put(network.getId(), true);
+                    networkNames.put(network, true);
                 });
+
+        // We now have a map of network names & ids to a 'matches filter' boolean
 
         log.debug("Networks matching filters: {}", networkNames);
 
-        this.networkNamesCache = networkNames;
+        synchronized (networkNamesCacheLock) {
+            this.networkNamesCache = networkNames;
+        }
     }
 
     private boolean filterNetwork(String networkName) {
         if (networkNamesCache == null || !networkNamesCache.containsKey(networkName)) {
-            updateNetworkNames();
+            synchronized (networkNamesCacheLock) {
+                if (networkNamesCache == null || !networkNamesCache.containsKey(networkName)) {
+                    updateNetworkNames();
+                }
+            }
         }
         return networkNamesCache.getOrDefault(networkName, false);
     }
@@ -99,31 +116,22 @@ public class InternalNetworkConfigurationModifier implements ServiceConfiguratio
             return Stream.of(configuration);
         }
 
-        var containerNetworks = Optional.ofNullable(inspectContainerResponse)
+        var containerNetworks = Optional.of(inspectContainerResponse)
                 .map(InspectContainerResponse::getNetworkSettings)
                 .map(NetworkSettings::getNetworks)
-                .map(Map::entrySet)
+                .map(Map::values)
                 .stream()
                 .flatMap(Collection::stream)
-                .filter(network -> filterNetwork(network.getKey()))
+                .filter(network -> filterNetwork(network.getNetworkID()))
                 .collect(Collectors.toSet());
 
         switch (containerNetworks.size()) {
             case 0:
                 log.warn("{} has no internal networks to bind to.", configuration);
                 return Stream.empty();
-            default:
-                if (log.isWarnEnabled()) {
-                    log.warn("{} has multiple internal networks {} for binding {}. Selecting one at-random.",
-                            configuration,
-                            containerNetworks.stream().map(Entry::getKey).collect(
-                                    Collectors.toSet()), configuration.getServiceBinding());
-                }
-                // no break
             case 1:
                 return containerNetworks.stream()
                         .findAny()
-                        .map(Entry::getValue)
                         .map(ContainerNetwork::getIpAddress)
                         .map(internalIp -> {
                             log.debug("Replacing binding in {} with internal IP {}", configuration, internalIp);
@@ -131,6 +139,14 @@ public class InternalNetworkConfigurationModifier implements ServiceConfiguratio
                             return configuration.withBinding(serviceBinding.withIp(internalIp));
                         })
                         .stream();
+            default:
+                log.warn(
+                        "{} has multiple internal networks {} for binding {}. Refusing to select any internal network.",
+                        configuration,
+                        containerNetworks.stream().map(ContainerNetwork::getNetworkID).collect(Collectors.toSet()),
+                        configuration.getServiceBinding()
+                );
+                return Stream.empty();
         }
     }
 
