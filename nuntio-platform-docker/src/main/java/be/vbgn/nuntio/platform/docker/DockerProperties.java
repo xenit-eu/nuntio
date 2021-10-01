@@ -7,13 +7,13 @@ import org.springframework.stereotype.Component;
 @Data
 @Component
 @ConfigurationProperties("nuntio.docker")
-public class DockerConfig {
+public class DockerProperties {
 
-    private DaemonConfig daemon;
+    private DaemonProperties daemon;
 
 
     @Data
-    public static class DaemonConfig {
+    public static class DaemonProperties {
 
         private String host;
         private boolean tlsVerify;

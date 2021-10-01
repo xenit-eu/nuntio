@@ -22,7 +22,7 @@ public class LiveWatchDaemon implements Runnable {
     private ServiceRegistry registry;
     private PlatformToRegistryMapper platformToRegistryMapper;
     private ChecksProcessor healthcheckProcessor;
-    private EngineConfig engineConfig;
+    private EngineProperties engineConfig;
 
     @Override
     public void run() {

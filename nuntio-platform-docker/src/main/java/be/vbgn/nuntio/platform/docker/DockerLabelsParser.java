@@ -129,10 +129,10 @@ public class DockerLabelsParser {
         String serviceBindingPort = matcher.group("serviceBindingPort");
         String serviceBindingProtocol = matcher.group("serviceBindingProtocol");
 
-        if (serviceBindingPort == null || serviceBindingPort.isEmpty()) {
+        if (serviceBindingPort == null) {
             return ServiceBinding.ANY;
         }
-        if (serviceBindingProtocol == null || serviceBindingProtocol.isEmpty()) {
+        if (serviceBindingProtocol == null) {
             return ServiceBinding.fromPort(serviceBindingPort);
         }
 

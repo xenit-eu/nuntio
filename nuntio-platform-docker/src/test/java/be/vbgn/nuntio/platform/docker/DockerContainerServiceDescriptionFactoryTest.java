@@ -48,9 +48,9 @@ class DockerContainerServiceDescriptionFactoryTest {
     }
 
     private void doNotModifyServiceConfiguration(InspectContainerResponse inspectContainerResponse) {
-        Mockito.when(mockServiceConfigurationModifier.modifyConfiguration(Mockito.any(),
-                        Mockito.eq(inspectContainerResponse)))
-                .thenAnswer(invocation -> Stream.of(invocation.getArgument(0, PlatformServiceConfiguration.class)));
+        Mockito.doAnswer(invocation -> Stream.of(invocation.getArgument(0, PlatformServiceConfiguration.class)))
+                .when(mockServiceConfigurationModifier)
+                .modifyConfiguration(Mockito.any(), Mockito.eq(inspectContainerResponse));
     }
 
     @Test

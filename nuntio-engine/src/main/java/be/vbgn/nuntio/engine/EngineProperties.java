@@ -9,12 +9,12 @@ import org.springframework.stereotype.Component;
 @Data
 @Component
 @ConfigurationProperties("nuntio.engine")
-public class EngineConfig {
+public class EngineProperties {
 
-    LiveWatchConfig live = new LiveWatchConfig();
+    LiveWatchProperties live = new LiveWatchProperties();
 
     @Data
-    public static class LiveWatchConfig {
+    public static class LiveWatchProperties {
 
         boolean blocking = true;
         Duration delay = Duration.of(1, ChronoUnit.SECONDS);

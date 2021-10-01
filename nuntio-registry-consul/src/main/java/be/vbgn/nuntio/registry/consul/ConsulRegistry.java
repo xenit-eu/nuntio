@@ -6,7 +6,7 @@ import be.vbgn.nuntio.api.registry.CheckType;
 import be.vbgn.nuntio.api.registry.RegistryServiceDescription;
 import be.vbgn.nuntio.api.registry.RegistryServiceIdentifier;
 import be.vbgn.nuntio.api.registry.ServiceRegistry;
-import be.vbgn.nuntio.registry.consul.ConsulConfig.CheckConfig;
+import be.vbgn.nuntio.registry.consul.ConsulProperties.CheckProperties;
 import com.ecwid.consul.v1.ConsulClient;
 import com.ecwid.consul.v1.agent.model.NewCheck;
 import com.ecwid.consul.v1.agent.model.NewService;
@@ -31,7 +31,7 @@ public class ConsulRegistry implements ServiceRegistry {
 
     private static final String NUNTIO_SID = "nuntio-sid";
     private ConsulClient consulClient;
-    private ConsulConfig consulConfig;
+    private ConsulProperties consulConfig;
 
     @Override
     public Set<RegistryServiceIdentifier> findServices() {
@@ -108,9 +108,9 @@ public class ConsulRegistry implements ServiceRegistry {
             newCheck.setName(checkType.getTitle());
             newCheck.setNotes(checkType.getDescription());
 
-            Optional<CheckConfig> checkConfig = Optional.ofNullable(consulConfig.getChecks().get(checkType));
-            checkConfig.map(CheckConfig::getTtl).ifPresent(newCheck::setTtl);
-            checkConfig.map(CheckConfig::getDeregisterCriticalServiceAfter)
+            Optional<CheckProperties> checkConfig = Optional.ofNullable(consulConfig.getChecks().get(checkType));
+            checkConfig.map(CheckProperties::getTtl).ifPresent(newCheck::setTtl);
+            checkConfig.map(CheckProperties::getDeregisterCriticalServiceAfter)
                     .ifPresent(newCheck::setDeregisterCriticalServiceAfter);
 
             log.trace("Consul check object: {}", newCheck);

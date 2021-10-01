@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 @ConditionalOnProperty("nuntio.consul.enabled")
 public class ConsulClientFactory implements FactoryBean<ConsulClient> {
 
-    private final ConsulConfig consulConfig;
+    private final ConsulProperties consulConfig;
 
     @Override
     public ConsulClient getObject() {

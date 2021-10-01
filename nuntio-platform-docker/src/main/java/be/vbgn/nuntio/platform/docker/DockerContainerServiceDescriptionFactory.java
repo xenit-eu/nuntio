@@ -21,7 +21,6 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;
-import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
 @AllArgsConstructor(onConstructor_ = @Autowired)
@@ -104,8 +103,8 @@ public class DockerContainerServiceDescriptionFactory {
     }
 
     @NonNull
-    private static Set<String> splitByComma(@Nullable String input) {
-        if (input == null || input.isEmpty()) {
+    private static Set<String> splitByComma(String input) {
+        if (input.isEmpty()) {
             return Collections.emptySet();
         }
         return new HashSet<>(Arrays.asList(input.split(",")));

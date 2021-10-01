@@ -14,19 +14,19 @@ import org.springframework.stereotype.Component;
 @Component
 @ConfigurationProperties("nuntio.consul")
 @NonFinal
-public class ConsulConfig {
+public class ConsulProperties {
 
     String host;
     int port;
 
     String token = null;
 
-    Map<CheckType, CheckConfig> checks;
+    Map<CheckType, CheckProperties> checks;
 
     @Value
     @NonFinal
     @ConstructorBinding
-    static class CheckConfig {
+    static class CheckProperties {
 
         String deregisterCriticalServiceAfter;
         String ttl;

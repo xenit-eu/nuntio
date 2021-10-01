@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import be.vbgn.nuntio.api.platform.ServiceBinding;
 import be.vbgn.nuntio.platform.docker.DockerLabelsParser.Label;
 import be.vbgn.nuntio.platform.docker.DockerLabelsParser.ParsedLabel;
+import java.util.Collections;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
@@ -75,4 +76,14 @@ class DockerLabelsParserTest {
         assertEquals(Label.METADATA, parsedLabel.getLabelKind());
         assertEquals("some-metadata", parsedLabel.getAdditional());
     }
+
+    @Test
+    void parseLabelsUnknownKind() {
+        Map<String, String> labels = Map.of("nuntio/8080/bla", "value1");
+
+        Map<ParsedLabel, String> parsedLabels = labelsParser.parseLabels(labels);
+
+        assertEquals(Collections.emptyMap(), parsedLabels);
+    }
+
 }

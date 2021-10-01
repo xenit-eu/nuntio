@@ -19,7 +19,7 @@ import org.springframework.stereotype.Component;
 @ConditionalOnProperty("nuntio.docker.enabled")
 public class DockerClientFactory implements FactoryBean<DockerClient> {
 
-    private DockerConfig config;
+    private DockerProperties config;
 
     @Override
     public DockerClient getObject() {
