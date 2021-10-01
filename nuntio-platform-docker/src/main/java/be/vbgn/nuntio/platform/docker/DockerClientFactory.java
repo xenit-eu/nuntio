@@ -8,15 +8,8 @@ import com.github.dockerjava.httpclient5.ApacheDockerHttpClient;
 import com.github.dockerjava.transport.DockerHttpClient;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.FactoryBean;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.context.annotation.Lazy;
-import org.springframework.stereotype.Component;
 
-@Component
-@AllArgsConstructor(onConstructor_ = @Autowired)
-@Lazy
-@ConditionalOnProperty("nuntio.docker.enabled")
+@AllArgsConstructor
 public class DockerClientFactory implements FactoryBean<DockerClient> {
 
     private DockerProperties config;

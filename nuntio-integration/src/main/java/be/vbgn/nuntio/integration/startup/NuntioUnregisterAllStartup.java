@@ -1,18 +1,13 @@
-package be.vbgn.nuntio.app.startup;
+package be.vbgn.nuntio.integration.startup;
 
 import be.vbgn.nuntio.api.registry.ServiceRegistry;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ConfigurableApplicationContext;
-import org.springframework.stereotype.Component;
 
-@Component
 @Slf4j
-@ConditionalOnProperty("nuntio.app.unregister-all")
-@AllArgsConstructor(onConstructor_ = @Autowired)
+@AllArgsConstructor
 public class NuntioUnregisterAllStartup implements NuntioApplicationStartup {
 
     private ServiceRegistry registry;

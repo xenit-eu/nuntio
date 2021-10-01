@@ -1,26 +1,25 @@
-package be.vbgn.nuntio.app;
+package be.vbgn.nuntio.integration;
 
 import be.vbgn.nuntio.api.registry.CheckType;
 import be.vbgn.nuntio.api.registry.RegistryServiceIdentifier;
 import be.vbgn.nuntio.api.registry.ServiceRegistry;
-import javax.annotation.PreDestroy;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
+import org.springframework.context.ApplicationListener;
+import org.springframework.context.event.ContextClosedEvent;
 
-@Component
 @Slf4j
-@AllArgsConstructor(onConstructor_ = @Autowired)
-public class NuntioApplicationShutdown {
+@AllArgsConstructor
+public class NuntioApplicationShutdown implements ApplicationListener<ContextClosedEvent> {
 
     private ServiceRegistry registry;
 
-    @PreDestroy
-    public void unregisterChecks() {
+    @Override
+    public void onApplicationEvent(ContextClosedEvent event) {
         log.info("Unregistering health checks on application shutdown");
         for (RegistryServiceIdentifier service : registry.findServices()) {
             registry.unregisterCheck(service, CheckType.HEALTHCHECK);
         }
+
     }
 }

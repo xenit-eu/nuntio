@@ -5,14 +5,9 @@ import be.vbgn.nuntio.api.registry.RegistryServiceIdentifier;
 import be.vbgn.nuntio.api.registry.ServiceRegistry;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Component;
 
-@Component
-@AllArgsConstructor(onConstructor_ = @Autowired)
-@ConditionalOnProperty(value = "nuntio.engine.anti-entropy.enabled", matchIfMissing = true)
+@AllArgsConstructor
 @Slf4j
 public class AntiEntropyDaemon {
 

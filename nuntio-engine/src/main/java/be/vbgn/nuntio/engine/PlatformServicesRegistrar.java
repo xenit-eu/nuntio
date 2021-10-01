@@ -11,11 +11,8 @@ import be.vbgn.nuntio.api.registry.ServiceRegistry;
 import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
-@Component
-@AllArgsConstructor(onConstructor_ = @Autowired)
+@AllArgsConstructor
 @Slf4j
 public class PlatformServicesRegistrar {
 
@@ -37,7 +34,7 @@ public class PlatformServicesRegistrar {
             });
             Set<RegistryServiceDescription> registryServiceDescriptions = platformToRegistryMapper.createServices(
                     platformServiceDescription);
-           
+
             if (registryService.isEmpty() && !registryServiceDescriptions.isEmpty()) {
                 log.warn("Platform {} is not registered.", platformServiceDescription);
             }

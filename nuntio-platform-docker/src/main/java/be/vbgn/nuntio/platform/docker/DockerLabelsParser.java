@@ -13,8 +13,6 @@ import java.util.stream.Collectors;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
 
 /**
  * Parses a docker label for nuntio into its constituents.
@@ -27,7 +25,6 @@ import org.springframework.stereotype.Component;
  * * nuntio/tcp:80/tags
  * * nuntio/udp:65/metadata/my-metadata
  */
-@Component
 public class DockerLabelsParser {
 
 
@@ -57,7 +54,7 @@ public class DockerLabelsParser {
                         Collectors.joining("|"));
     }
 
-    public DockerLabelsParser(@Value("${nuntio.docker.label-prefix}") String labelPrefix) {
+    public DockerLabelsParser(String labelPrefix) {
         this.labelPrefix = labelPrefix;
     }
 

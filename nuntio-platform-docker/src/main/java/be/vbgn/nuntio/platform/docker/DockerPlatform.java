@@ -13,32 +13,17 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
-import org.springframework.context.annotation.Lazy;
-import org.springframework.stereotype.Component;
 
 @Slf4j
-@Component
-@ConditionalOnBean(DockerClient.class)
+@AllArgsConstructor
 public class DockerPlatform implements ServicePlatform {
 
     private final DockerClient dockerClient;
     private final DockerContainerServiceDescriptionFactory serviceDescriptionFactory;
     private final DockerContainerWatcher containerWatcher;
     private final DockerPlatformEventFactory eventFactory;
-
-    @Autowired
-    public DockerPlatform(DockerClient dockerClient,
-            DockerContainerServiceDescriptionFactory serviceDescriptionFactory,
-            @Lazy DockerContainerWatcher containerWatcher,
-            DockerPlatformEventFactory eventFactory) {
-        this.dockerClient = dockerClient;
-        this.serviceDescriptionFactory = serviceDescriptionFactory;
-        this.containerWatcher = containerWatcher;
-        this.eventFactory = eventFactory;
-    }
 
     @Override
     public Set<PlatformServiceDescription> findAll() {

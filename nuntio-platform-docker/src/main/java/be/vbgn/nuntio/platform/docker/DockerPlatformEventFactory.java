@@ -5,9 +5,7 @@ import be.vbgn.nuntio.api.platform.PlatformServiceEvent.EventType;
 import com.github.dockerjava.api.model.Event;
 import com.github.dockerjava.api.model.EventActor;
 import java.util.Optional;
-import org.springframework.stereotype.Component;
 
-@Component
 public class DockerPlatformEventFactory {
 
     public Optional<PlatformServiceEvent> createEvent(Event event) {

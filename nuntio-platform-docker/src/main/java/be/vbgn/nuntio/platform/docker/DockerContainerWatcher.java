@@ -12,16 +12,9 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Component;
 
 @Slf4j
-@Component
-@Lazy
-@ConditionalOnBean(DockerClient.class)
 public class DockerContainerWatcher {
 
     private final DockerClient dockerClient;
@@ -30,7 +23,6 @@ public class DockerContainerWatcher {
 
     private BlockingQueue<Event> events;
 
-    @Autowired
     public DockerContainerWatcher(DockerClient dockerClient) {
         this.dockerClient = dockerClient;
     }

@@ -1,4 +1,4 @@
-package be.vbgn.nuntio.app.startup;
+package be.vbgn.nuntio.integration.startup;
 
 import org.springframework.boot.ApplicationRunner;
 

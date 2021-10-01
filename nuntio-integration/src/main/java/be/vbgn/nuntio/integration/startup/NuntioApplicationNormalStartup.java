@@ -1,35 +1,23 @@
-package be.vbgn.nuntio.app.startup;
+package be.vbgn.nuntio.integration.startup;
 
 import be.vbgn.nuntio.engine.AntiEntropyDaemon;
 import be.vbgn.nuntio.engine.LiveWatchDaemon;
 import be.vbgn.nuntio.engine.PlatformServicesRegistrar;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.ApplicationContext;
-import org.springframework.stereotype.Component;
+import org.springframework.lang.Nullable;
 
-@Component
 @Slf4j
-@ConditionalOnMissingBean(NuntioApplicationStartup.class)
+@AllArgsConstructor
 public class NuntioApplicationNormalStartup implements ApplicationRunner {
 
     private PlatformServicesRegistrar platformServicesRegistrar;
+    @Nullable
     private LiveWatchDaemon liveWatchDaemon;
     private ApplicationContext applicationContext;
-
-    @Autowired
-    public NuntioApplicationNormalStartup(
-            PlatformServicesRegistrar platformServicesRegistrar,
-            @Autowired(required = false) LiveWatchDaemon liveWatchDaemon,
-            ApplicationContext applicationContext
-    ) {
-        this.platformServicesRegistrar = platformServicesRegistrar;
-        this.liveWatchDaemon = liveWatchDaemon;
-        this.applicationContext = applicationContext;
-    }
 
 
     @Override

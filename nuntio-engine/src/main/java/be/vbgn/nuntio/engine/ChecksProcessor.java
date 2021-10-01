@@ -7,11 +7,8 @@ import be.vbgn.nuntio.api.registry.RegistryServiceIdentifier;
 import be.vbgn.nuntio.api.registry.ServiceRegistry;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
-@Component
-@AllArgsConstructor(onConstructor_ = @Autowired)
+@AllArgsConstructor
 @Slf4j
 public class ChecksProcessor {
 

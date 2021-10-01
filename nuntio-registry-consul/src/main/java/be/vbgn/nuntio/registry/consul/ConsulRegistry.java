@@ -19,13 +19,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
-import org.springframework.stereotype.Component;
 
-@Component
-@AllArgsConstructor(onConstructor_ = @Autowired)
-@ConditionalOnBean(ConsulClient.class)
+@AllArgsConstructor
 @Slf4j
 public class ConsulRegistry implements ServiceRegistry {
 

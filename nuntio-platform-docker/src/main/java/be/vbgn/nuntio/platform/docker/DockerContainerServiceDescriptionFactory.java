@@ -19,13 +19,10 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;
-import org.springframework.stereotype.Component;
 
-@AllArgsConstructor(onConstructor_ = @Autowired)
+@AllArgsConstructor
 @Slf4j
-@Component
 public class DockerContainerServiceDescriptionFactory {
 
     private final DockerLabelsParser labelsParser;

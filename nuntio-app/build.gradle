@@ -10,10 +10,9 @@ dependencies {
     compileOnly 'org.projectlombok:lombok:1.18.20'
 
     implementation platform(project(':nuntio-bom'))
-    implementation project(':nuntio-api')
+    implementation project(':nuntio-integration')
     implementation project(':nuntio-platform-docker')
     implementation project(':nuntio-registry-consul')
-    implementation project(':nuntio-engine')
     implementation 'org.springframework.boot:spring-boot-starter'
 
     testImplementation platform('org.testcontainers:testcontainers-bom:1.16.0')
