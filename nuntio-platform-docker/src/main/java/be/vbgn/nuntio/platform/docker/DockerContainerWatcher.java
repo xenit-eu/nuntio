@@ -1,7 +1,7 @@
 package be.vbgn.nuntio.platform.docker;
 
+import be.vbgn.nuntio.api.platform.stream.BlockingQueueEventStream;
 import be.vbgn.nuntio.api.platform.stream.EventStream;
-import be.vbgn.nuntio.platform.docker.stream.QueueEventStream;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.async.ResultCallback.Adapter;
 import com.github.dockerjava.api.model.Event;
@@ -39,7 +39,7 @@ public class DockerContainerWatcher {
     }
 
     public EventStream<Event> getEventStream() {
-        return new QueueEventStream<>(events);
+        return new BlockingQueueEventStream<>(events);
     }
 
     private class EventResultCallback extends Adapter<Event> {

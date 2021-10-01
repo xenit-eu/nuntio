@@ -3,15 +3,14 @@ package be.vbgn.nuntio.engine;
 import be.vbgn.nuntio.api.platform.ServicePlatform;
 import be.vbgn.nuntio.api.registry.ServiceRegistry;
 import be.vbgn.nuntio.engine.EngineProperties.AntiEntropyProperties;
-import java.time.Duration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.scheduling.TaskScheduler;
-import org.springframework.scheduling.support.PeriodicTrigger;
+import org.springframework.scheduling.annotation.SchedulingConfigurer;
+import org.springframework.scheduling.config.ScheduledTaskRegistrar;
 
 @Configuration
-public class EngineConfiguration {
+public class EngineConfiguration implements SchedulingConfigurer {
 
     @Bean
     @ConfigurationProperties(value = "nuntio.engine", ignoreUnknownFields = false)
@@ -22,19 +21,13 @@ public class EngineConfiguration {
     @Bean
     AntiEntropyDaemon antiEntropyDaemon(ServicePlatform servicePlatform, ServiceRegistry serviceRegistry,
             ChecksProcessor checksProcessor, PlatformServicesRegistrar platformServicesRegistrar,
-            EngineProperties engineProperties, TaskScheduler taskScheduler) {
+            EngineProperties engineProperties) {
         AntiEntropyProperties antiEntropyProperties = engineProperties.getAntiEntropy();
         if (!antiEntropyProperties.isEnabled()) {
             return null;
         }
-        AntiEntropyDaemon antiEntropyDaemon = new AntiEntropyDaemon(servicePlatform, serviceRegistry, checksProcessor,
-                platformServicesRegistrar);
-        // Schedule runs
-        Duration delay = antiEntropyProperties.getDelay();
-        PeriodicTrigger trigger = new PeriodicTrigger(delay.toMillis());
-        trigger.setInitialDelay(delay.toMillis());
-        taskScheduler.schedule(antiEntropyDaemon::runAntiEntropy, trigger);
-        return antiEntropyDaemon;
+        return new AntiEntropyDaemon(servicePlatform, serviceRegistry, checksProcessor,
+                platformServicesRegistrar, antiEntropyProperties);
     }
 
     @Bean
@@ -67,4 +60,8 @@ public class EngineConfiguration {
     }
 
 
+    @Override
+    public void configureTasks(ScheduledTaskRegistrar taskRegistrar) {
+
+    }
 }

@@ -3,17 +3,23 @@ package be.vbgn.nuntio.engine;
 import be.vbgn.nuntio.api.platform.ServicePlatform;
 import be.vbgn.nuntio.api.registry.RegistryServiceIdentifier;
 import be.vbgn.nuntio.api.registry.ServiceRegistry;
+import be.vbgn.nuntio.engine.EngineProperties.AntiEntropyProperties;
+import java.time.Duration;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.SchedulingConfigurer;
+import org.springframework.scheduling.config.ScheduledTaskRegistrar;
+import org.springframework.scheduling.support.PeriodicTrigger;
 
 @AllArgsConstructor
 @Slf4j
-public class AntiEntropyDaemon {
+public class AntiEntropyDaemon implements SchedulingConfigurer {
 
     private ServicePlatform platform;
     private ServiceRegistry registry;
     private ChecksProcessor healthcheckProcessor;
     private PlatformServicesRegistrar platformServicesRegistrar;
+    private AntiEntropyProperties antiEntropyProperties;
 
     public void runAntiEntropy() {
         try {
@@ -37,4 +43,11 @@ public class AntiEntropyDaemon {
         }
     }
 
+    @Override
+    public void configureTasks(ScheduledTaskRegistrar taskRegistrar) {
+        Duration delay = antiEntropyProperties.getDelay();
+        PeriodicTrigger trigger = new PeriodicTrigger(delay.toMillis());
+        trigger.setInitialDelay(delay.toMillis());
+        taskRegistrar.addTriggerTask(this::runAntiEntropy, trigger);
+    }
 }

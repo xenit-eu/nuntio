@@ -13,10 +13,10 @@ dependencies {
     implementation project(':nuntio-integration')
     implementation project(':nuntio-platform-docker')
     implementation project(':nuntio-registry-consul')
+    implementation project(':nuntio-registry-fake')
     implementation 'org.springframework.boot:spring-boot-starter'
 
     testImplementation platform('org.testcontainers:testcontainers-bom:1.16.0')
-    testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.testcontainers:junit-jupiter'
 }
 
@@ -29,8 +29,4 @@ createDockerFile {
 
 dockerCompose {
     useComposeFiles = ['src/test/resources/docker-compose.yml']
-}
-
-test {
-    useJUnitPlatform()
 }

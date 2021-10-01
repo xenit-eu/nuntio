@@ -13,7 +13,6 @@ import com.ecwid.consul.v1.agent.model.NewService;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -29,7 +28,7 @@ public class ConsulRegistry implements ServiceRegistry {
     private ConsulProperties consulConfig;
 
     @Override
-    public Set<RegistryServiceIdentifier> findServices() {
+    public Set<? extends RegistryServiceIdentifier> findServices() {
         return consulClient.getAgentServices()
                 .getValue()
                 .values()
@@ -37,14 +36,6 @@ public class ConsulRegistry implements ServiceRegistry {
                 .filter(service -> service.getMeta().containsKey(NUNTIO_SID))
                 .map(service -> new ConsulServiceIdentifier(service.getService(), service.getId(),
                         SharedIdentifier.parse(service.getMeta().get(NUNTIO_SID))))
-                .collect(Collectors.toSet());
-    }
-
-    @Override
-    public Set<RegistryServiceIdentifier> findAll(SharedIdentifier sharedIdentifier) {
-        return findServices()
-                .stream()
-                .filter(serviceIdentifier -> Objects.equals(serviceIdentifier.getSharedIdentifier(), sharedIdentifier))
                 .collect(Collectors.toSet());
     }
 
