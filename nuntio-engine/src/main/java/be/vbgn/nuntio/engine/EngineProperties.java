@@ -9,6 +9,7 @@ public class EngineProperties {
 
     LiveWatchProperties live = new LiveWatchProperties();
     AntiEntropyProperties antiEntropy = new AntiEntropyProperties();
+    CheckProperties checks = new CheckProperties();
 
     @Data
     public static class LiveWatchProperties {
@@ -23,5 +24,12 @@ public class EngineProperties {
 
         boolean enabled = true;
         Duration delay = Duration.of(1, ChronoUnit.MINUTES);
+    }
+
+    @Data
+    public static class CheckProperties {
+
+        boolean heartbeat = true;
+        boolean healthcheck = true;
     }
 }

@@ -34,7 +34,7 @@ public class NuntioApplicationNormalStartup implements ApplicationRunner {
 
         log.info("Running existing services registration at application startup");
         try {
-            platformServicesRegistrar.registerPlatformServices();
+            platformServicesRegistrar.registerAllServices();
         } catch (Exception e) {
             if (applicationContext.getBeanNamesForType(AntiEntropyDaemon.class, true, false).length > 0) {
                 log.error(

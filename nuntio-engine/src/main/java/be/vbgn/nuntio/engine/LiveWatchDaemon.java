@@ -2,7 +2,6 @@ package be.vbgn.nuntio.engine;
 
 import be.vbgn.nuntio.api.platform.PlatformServiceEvent;
 import be.vbgn.nuntio.api.platform.ServicePlatform;
-import be.vbgn.nuntio.api.registry.RegistryServiceIdentifier;
 import be.vbgn.nuntio.api.registry.ServiceRegistry;
 import be.vbgn.nuntio.engine.EngineProperties.LiveWatchProperties;
 import java.time.Duration;
@@ -16,8 +15,8 @@ public class LiveWatchDaemon implements Runnable {
 
     private ServicePlatform platform;
     private ServiceRegistry registry;
-    private PlatformToRegistryMapper platformToRegistryMapper;
     private ChecksProcessor healthcheckProcessor;
+    private PlatformServicesRegistrar platformServicesRegistrar;
     private LiveWatchProperties liveWatchProperties;
 
     @Override
@@ -50,13 +49,7 @@ public class LiveWatchDaemon implements Runnable {
             case START:
                 platform.find(platformServiceEvent.getIdentifier())
                         .ifPresent(platformServiceDescription -> {
-                            platformToRegistryMapper.createServices(platformServiceDescription)
-                                    .forEach(registryServiceDescription -> {
-                                        RegistryServiceIdentifier registryServiceIdentifier = registry.registerService(
-                                                registryServiceDescription);
-                                        healthcheckProcessor.updateChecks(registryServiceIdentifier,
-                                                platformServiceDescription);
-                                    });
+                            platformServicesRegistrar.registerService(platformServiceDescription);
                         });
                 // no break
             case PAUSE:

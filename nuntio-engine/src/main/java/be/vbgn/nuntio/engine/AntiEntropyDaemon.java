@@ -31,7 +31,7 @@ public class AntiEntropyDaemon {
                 });
             }
 
-            platformServicesRegistrar.registerPlatformServices();
+            platformServicesRegistrar.registerAllServices();
         } catch (Throwable e) {
             log.error("Exception during anti-entropy run", e);
         }

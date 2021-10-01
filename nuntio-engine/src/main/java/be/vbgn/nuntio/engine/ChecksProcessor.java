@@ -1,10 +1,12 @@
 package be.vbgn.nuntio.engine;
 
 import be.vbgn.nuntio.api.platform.PlatformServiceDescription;
+import be.vbgn.nuntio.api.platform.PlatformServiceState;
 import be.vbgn.nuntio.api.registry.CheckStatus;
 import be.vbgn.nuntio.api.registry.CheckType;
 import be.vbgn.nuntio.api.registry.RegistryServiceIdentifier;
 import be.vbgn.nuntio.api.registry.ServiceRegistry;
+import be.vbgn.nuntio.engine.EngineProperties.CheckProperties;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -13,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 public class ChecksProcessor {
 
     private ServiceRegistry registry;
+    private CheckProperties healthCheckProperties;
 
     public void updateChecks(RegistryServiceIdentifier service,
             PlatformServiceDescription platformServiceDescription) {
@@ -31,25 +34,33 @@ public class ChecksProcessor {
                 // because they are unregistered
                 return;
         }
-        platformServiceDescription.getHealth().ifPresentOrElse(platformServiceHealth -> {
-            switch (platformServiceHealth.getHealthStatus()) {
-                case HEALTHY:
-                    registry.updateCheck(service, CheckType.HEALTHCHECK, CheckStatus.PASSING,
-                            platformServiceHealth.getLog());
-                    break;
-                case STARTING:
-                    registry.updateCheck(service, CheckType.HEALTHCHECK, CheckStatus.WARNING,
-                            platformServiceHealth.getLog());
-                    break;
-                case UNHEALTHY:
-                    registry.updateCheck(service, CheckType.HEALTHCHECK, CheckStatus.FAILING,
-                            platformServiceHealth.getLog());
-                    break;
-            }
 
-        }, () -> {
-            registry.unregisterCheck(service, CheckType.HEALTHCHECK);
-        });
+        if (platformServiceDescription.getState() != PlatformServiceState.STOPPED
+                && healthCheckProperties.isHeartbeat()) {
+            registry.updateCheck(service, CheckType.HEARTBEAT, CheckStatus.PASSING, "Nuntio is watching");
+        }
+
+        if (healthCheckProperties.isHealthcheck()) {
+            platformServiceDescription.getHealth().ifPresentOrElse(platformServiceHealth -> {
+                switch (platformServiceHealth.getHealthStatus()) {
+                    case HEALTHY:
+                        registry.updateCheck(service, CheckType.HEALTHCHECK, CheckStatus.PASSING,
+                                platformServiceHealth.getLog());
+                        break;
+                    case STARTING:
+                        registry.updateCheck(service, CheckType.HEALTHCHECK, CheckStatus.WARNING,
+                                platformServiceHealth.getLog());
+                        break;
+                    case UNHEALTHY:
+                        registry.updateCheck(service, CheckType.HEALTHCHECK, CheckStatus.FAILING,
+                                platformServiceHealth.getLog());
+                        break;
+                }
+
+            }, () -> {
+                registry.unregisterCheck(service, CheckType.HEALTHCHECK);
+            });
+        }
     }
 
 

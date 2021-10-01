@@ -38,18 +38,18 @@ public class EngineConfiguration {
     }
 
     @Bean
-    ChecksProcessor checksProcessor(ServiceRegistry serviceRegistry) {
-        return new ChecksProcessor(serviceRegistry);
+    ChecksProcessor checksProcessor(ServiceRegistry serviceRegistry, EngineProperties engineProperties) {
+        return new ChecksProcessor(serviceRegistry, engineProperties.getChecks());
     }
 
     @Bean
     LiveWatchDaemon liveWatchDaemon(ServicePlatform servicePlatform, ServiceRegistry serviceRegistry,
-            ChecksProcessor checksProcessor, PlatformToRegistryMapper platformToRegistryMapper,
+            ChecksProcessor checksProcessor, PlatformServicesRegistrar platformServicesRegistrar,
             EngineProperties engineProperties) {
         if (!engineProperties.getLive().isEnabled()) {
             return null;
         }
-        return new LiveWatchDaemon(servicePlatform, serviceRegistry, platformToRegistryMapper, checksProcessor,
+        return new LiveWatchDaemon(servicePlatform, serviceRegistry, checksProcessor, platformServicesRegistrar,
                 engineProperties.getLive());
     }
 
