@@ -1,9 +1,10 @@
-package be.vbgn.nuntio.platform.docker.config;
+package be.vbgn.nuntio.platform.docker.config.modifier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import be.vbgn.nuntio.api.platform.PlatformServiceConfiguration;
 import be.vbgn.nuntio.api.platform.ServiceBinding;
+import be.vbgn.nuntio.platform.docker.config.modifier.ExpandAnyBindingConfigurationModifier;
 import com.github.dockerjava.api.command.InspectContainerResponse;
 import com.github.dockerjava.api.model.ContainerConfig;
 import com.github.dockerjava.api.model.ExposedPort;

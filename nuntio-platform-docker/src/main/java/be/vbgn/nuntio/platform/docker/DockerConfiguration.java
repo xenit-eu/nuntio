@@ -1,6 +1,8 @@
 package be.vbgn.nuntio.platform.docker;
 
-import be.vbgn.nuntio.platform.docker.config.ServiceConfigurationModifier;
+import be.vbgn.nuntio.platform.docker.config.modifier.ServiceConfigurationModifier;
+import be.vbgn.nuntio.platform.docker.config.parser.NuntioLabelsParser;
+import be.vbgn.nuntio.platform.docker.config.parser.ServiceConfigurationParser;
 import com.github.dockerjava.api.DockerClient;
 import java.util.List;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -26,9 +28,9 @@ public class DockerConfiguration {
     }
 
     @Bean
-    DockerContainerServiceDescriptionFactory serviceDescriptionFactory(DockerLabelsParser labelsParser,
+    DockerContainerServiceDescriptionFactory serviceDescriptionFactory(ServiceConfigurationParser configurationParser,
             List<ServiceConfigurationModifier> configurationModifiers) {
-        return new DockerContainerServiceDescriptionFactory(labelsParser, configurationModifiers);
+        return new DockerContainerServiceDescriptionFactory(configurationParser, configurationModifiers);
     }
 
     @Bean
@@ -51,8 +53,11 @@ public class DockerConfiguration {
     }
 
     @Bean
-    DockerLabelsParser dockerLabelsParser(DockerProperties dockerProperties) {
-        return new DockerLabelsParser(dockerProperties.getLabelPrefix());
+    NuntioLabelsParser nuntioLabelsParser(DockerProperties dockerProperties) {
+        if(dockerProperties.getNuntioLabel().isEnabled()) {
+            return new NuntioLabelsParser(dockerProperties.getNuntioLabel().getPrefix());
+        }
+        return null;
     }
 
 

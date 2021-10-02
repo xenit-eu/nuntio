@@ -12,7 +12,7 @@ public class DockerProperties {
     private WatchProperties watch = new WatchProperties();
 
     private PortBindConfiguration bind = PortBindConfiguration.PUBLISHED;
-    private String labelPrefix = "nuntio.vbgn.be";
+    private NuntioLabelProperties nuntioLabel =new NuntioLabelProperties();
 
     public enum PortBindConfiguration {
         PUBLISHED,
@@ -32,5 +32,11 @@ public class DockerProperties {
 
         private Duration rate;
 
+    }
+
+    @Data
+    public static class NuntioLabelProperties {
+        private boolean enabled = true;
+        private String prefix = "nuntio.vbgn.be";
     }
 }

@@ -1,4 +1,4 @@
-package be.vbgn.nuntio.platform.docker.config;
+package be.vbgn.nuntio.platform.docker.config.modifier;
 
 import be.vbgn.nuntio.api.platform.PlatformServiceConfiguration;
 import com.github.dockerjava.api.command.InspectContainerResponse;

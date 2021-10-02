@@ -1,10 +1,11 @@
-package be.vbgn.nuntio.platform.docker.config;
+package be.vbgn.nuntio.platform.docker.config.modifier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import be.vbgn.nuntio.api.platform.PlatformServiceConfiguration;
 import be.vbgn.nuntio.api.platform.ServiceBinding;
-import be.vbgn.nuntio.platform.docker.config.InternalNetworkConfigurationModifier.DockerNetworksFetcher;
+import be.vbgn.nuntio.platform.docker.config.modifier.InternalNetworkConfigurationModifier;
+import be.vbgn.nuntio.platform.docker.config.modifier.InternalNetworkConfigurationModifier.DockerNetworksFetcher;
 import com.github.dockerjava.api.command.InspectContainerResponse;
 import com.github.dockerjava.api.command.InspectContainerResponse.ContainerState;
 import com.github.dockerjava.api.model.ContainerNetwork;

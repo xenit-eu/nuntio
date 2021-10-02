@@ -6,7 +6,8 @@ import static org.mockito.Mockito.times;
 import be.vbgn.nuntio.api.platform.PlatformServiceConfiguration;
 import be.vbgn.nuntio.api.platform.PlatformServiceDescription;
 import be.vbgn.nuntio.api.platform.ServiceBinding;
-import be.vbgn.nuntio.platform.docker.config.ServiceConfigurationModifier;
+import be.vbgn.nuntio.platform.docker.config.modifier.ServiceConfigurationModifier;
+import be.vbgn.nuntio.platform.docker.config.parser.NuntioLabelsParser;
 import com.github.dockerjava.api.command.InspectContainerResponse;
 import com.github.dockerjava.api.model.ContainerConfig;
 import java.util.Collections;
@@ -16,6 +17,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 import org.mockito.Mockito;
 
 class DockerContainerServiceDescriptionFactoryTest {
@@ -28,7 +30,7 @@ class DockerContainerServiceDescriptionFactoryTest {
         mockServiceConfigurationModifier = mock(ServiceConfigurationModifier.class);
 
         dockerContainerServiceDescriptionFactory = new DockerContainerServiceDescriptionFactory(
-                new DockerLabelsParser("nuntio"),
+                new NuntioLabelsParser("nuntio"),
                 Collections.singletonList(mockServiceConfigurationModifier)
         );
     }

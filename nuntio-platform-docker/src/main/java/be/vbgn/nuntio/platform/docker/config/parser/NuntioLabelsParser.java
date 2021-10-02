@@ -1,6 +1,7 @@
-package be.vbgn.nuntio.platform.docker;
+package be.vbgn.nuntio.platform.docker.config.parser;
 
 import be.vbgn.nuntio.api.platform.ServiceBinding;
+import be.vbgn.nuntio.platform.docker.config.parser.ParsedServiceConfiguration.ConfigurationKind;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -10,9 +11,6 @@ import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
 
 /**
  * Parses a docker label for nuntio into its constituents.
@@ -25,8 +23,7 @@ import lombok.Getter;
  * * nuntio/tcp:80/tags
  * * nuntio/udp:65/metadata/my-metadata
  */
-public class DockerLabelsParser {
-
+public class NuntioLabelsParser implements ServiceConfigurationParser {
 
     private final String labelPrefix;
 
@@ -35,9 +32,9 @@ public class DockerLabelsParser {
 
     static {
         String labelKindNoAdditionalPattern =
-                "(?<labelKind>" + createLabelPattern(Predicate.not(Label::isAcceptsAdditional)) + ")";
+                "(?<labelKind>" + createLabelPattern(Predicate.not(ConfigurationKind::isAcceptsAdditional)) + ")";
         String labelKindWithAdditionalPattern =
-                "(?<labelKind>" + createLabelPattern(Label::isAcceptsAdditional) + ")";
+                "(?<labelKind>" + createLabelPattern(ConfigurationKind::isAcceptsAdditional) + ")";
         String serviceBindingPattern = "(?:(?<serviceBindingProtocol>udp|tcp):)?(?<serviceBindingPort>[0-9]+)";
         LABEL_WITHOUT_ADDITIONAL_PATTERN = Pattern.compile(
                 "^(?:" + serviceBindingPattern + "/)?" + labelKindNoAdditionalPattern + "$");
@@ -48,57 +45,27 @@ public class DockerLabelsParser {
                 "^(?:" + serviceBindingPattern + "/)?" + labelKindWithAdditionalPattern + additionalPattern + "$");
     }
 
-    private static String createLabelPattern(Predicate<? super Label> filter) {
-        return Arrays.stream(Label.values()).filter(filter)
-                .map(Label::getLabelKind).collect(
+    private static String createLabelPattern(Predicate<? super ConfigurationKind> filter) {
+        return Arrays.stream(ConfigurationKind.values()).filter(filter)
+                .map(ConfigurationKind::getIdentifier).collect(
                         Collectors.joining("|"));
     }
 
-    public DockerLabelsParser(String labelPrefix) {
+    public NuntioLabelsParser(String labelPrefix) {
         this.labelPrefix = labelPrefix;
     }
 
-    @AllArgsConstructor
-    public enum Label {
-        SERVICE("service", false),
-        TAGS("tags", false),
-        METADATA("metadata", true),
-        ;
-
-        @Getter(value = AccessLevel.PRIVATE)
-        private final String labelKind;
-
-        @Getter(value = AccessLevel.PRIVATE)
-        private final boolean acceptsAdditional;
-
-        private static Optional<Label> find(String labelKind) {
-            for (Label label : values()) {
-                if (label.getLabelKind().equals(labelKind)) {
-                    return Optional.of(label);
-                }
-            }
-            return Optional.empty();
-        }
-    }
-
-    @lombok.Value
-    public static class ParsedLabel {
-
-        Label labelKind;
-        ServiceBinding binding;
-        String additional;
-    }
-
-    public Map<ParsedLabel, String> parseLabels(Map<String, String> labels) {
-        Map<ParsedLabel, String> parsedLabels = new HashMap<>();
-        for (Entry<String, String> labelEntry : labels.entrySet()) {
-            Optional<ParsedLabel> parsedLabel = parseLabel(labelEntry.getKey());
+    @Override
+    public Map<ParsedServiceConfiguration, String> parseContainerMetadata(ContainerMetadata containerMetadata) {
+        Map<ParsedServiceConfiguration, String> parsedLabels = new HashMap<>();
+        for (Entry<String, String> labelEntry : containerMetadata.getLabels().entrySet()) {
+            Optional<ParsedServiceConfiguration> parsedLabel = parseLabel(labelEntry.getKey());
             parsedLabel.ifPresent(label -> parsedLabels.put(label, labelEntry.getValue()));
         }
         return parsedLabels;
     }
 
-    private Optional<ParsedLabel> parseLabel(String label) {
+    private Optional<ParsedServiceConfiguration> parseLabel(String label) {
         String labelPrefix = this.labelPrefix + "/";
 
         if (!label.startsWith(labelPrefix)) {
@@ -108,14 +75,14 @@ public class DockerLabelsParser {
 
         Matcher labelWithoutAdditionalMatch = LABEL_WITHOUT_ADDITIONAL_PATTERN.matcher(withoutPrefix);
         if (labelWithoutAdditionalMatch.matches()) {
-            return Label.find(labelWithoutAdditionalMatch.group("labelKind"))
-                    .map(labelKind -> new ParsedLabel(labelKind,
+            return ConfigurationKind.find(labelWithoutAdditionalMatch.group("labelKind"))
+                    .map(labelKind -> new ParsedServiceConfiguration(labelKind,
                             createServiceBindingFromMatch(labelWithoutAdditionalMatch), null));
         }
         Matcher labelWithAdditionalMatch = LABEL_WITH_ADDITIONAL_PATTERN.matcher(withoutPrefix);
         if (labelWithAdditionalMatch.matches()) {
-            return Label.find(labelWithAdditionalMatch.group("labelKind"))
-                    .map(labelKind -> new ParsedLabel(labelKind,
+            return ConfigurationKind.find(labelWithAdditionalMatch.group("labelKind"))
+                    .map(labelKind -> new ParsedServiceConfiguration(labelKind,
                             createServiceBindingFromMatch(labelWithAdditionalMatch),
                             labelWithAdditionalMatch.group("labelAdditional")));
         }

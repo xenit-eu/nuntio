@@ -3,15 +3,17 @@ package be.vbgn.nuntio.platform.docker;
 import be.vbgn.nuntio.api.platform.PlatformServiceConfiguration;
 import be.vbgn.nuntio.api.platform.PlatformServiceDescription;
 import be.vbgn.nuntio.api.platform.ServiceBinding;
-import be.vbgn.nuntio.platform.docker.DockerLabelsParser.Label;
-import be.vbgn.nuntio.platform.docker.DockerLabelsParser.ParsedLabel;
-import be.vbgn.nuntio.platform.docker.config.ServiceConfigurationModifier;
+import be.vbgn.nuntio.platform.docker.config.parser.ContainerMetadata;
+import be.vbgn.nuntio.platform.docker.config.parser.InspectContainerMetadata;
+import be.vbgn.nuntio.platform.docker.config.parser.ParsedServiceConfiguration.ConfigurationKind;
+import be.vbgn.nuntio.platform.docker.config.parser.ParsedServiceConfiguration;
+import be.vbgn.nuntio.platform.docker.config.modifier.ServiceConfigurationModifier;
+import be.vbgn.nuntio.platform.docker.config.parser.ServiceConfigurationParser;
 import com.github.dockerjava.api.command.InspectContainerResponse;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
@@ -25,7 +27,7 @@ import org.springframework.lang.NonNull;
 @Slf4j
 public class DockerContainerServiceDescriptionFactory {
 
-    private final DockerLabelsParser labelsParser;
+    private final ServiceConfigurationParser configurationParser;
     private final List<ServiceConfigurationModifier> configurationModifiers;
 
     public PlatformServiceDescription createServiceDescription(InspectContainerResponse response) {
@@ -36,7 +38,7 @@ public class DockerContainerServiceDescriptionFactory {
     }
 
     private Set<PlatformServiceConfiguration> createConfiguration(InspectContainerResponse response) {
-        return createConfiguration(response.getConfig().getLabels())
+        return createConfiguration(new InspectContainerMetadata(response))
                 .stream()
                 .flatMap(configuration -> {
                     var optionalConfig = Stream.of(configuration);
@@ -48,23 +50,23 @@ public class DockerContainerServiceDescriptionFactory {
                 .collect(Collectors.toSet());
     }
 
-    private Set<PlatformServiceConfiguration> createConfiguration(Map<String, String> labels) {
-        var bindingsWithConfiguration = labelsParser.parseLabels(labels)
+    private Set<PlatformServiceConfiguration> createConfiguration(ContainerMetadata containerMetadata) {
+        var bindingsWithConfiguration = configurationParser.parseContainerMetadata(containerMetadata)
                 .entrySet()
                 .stream()
                 .collect(Collectors.groupingBy(entry -> entry.getKey().getBinding()));
 
         Set<PlatformServiceConfiguration> serviceConfigurations = new HashSet<>();
 
-        for (Entry<ServiceBinding, List<Entry<ParsedLabel, String>>> bindingListEntry : bindingsWithConfiguration.entrySet()) {
-            var services = findLabelOfType(bindingListEntry.getValue(), Label.SERVICE)
+        for (Entry<ServiceBinding, List<Entry<ParsedServiceConfiguration, String>>> bindingListEntry : bindingsWithConfiguration.entrySet()) {
+            var services = findLabelOfType(bindingListEntry.getValue(), ConfigurationKind.SERVICE)
                     .map(Entry::getValue)
                     .map(DockerContainerServiceDescriptionFactory::splitByComma);
-            var tags = findLabelOfType(bindingListEntry.getValue(), Label.TAGS)
+            var tags = findLabelOfType(bindingListEntry.getValue(), ConfigurationKind.TAGS)
                     .map(Entry::getValue)
                     .map(DockerContainerServiceDescriptionFactory::splitByComma)
                     .orElse(Collections.emptySet());
-            var metadata = findLabelsOfType(bindingListEntry.getValue(), Label.METADATA)
+            var metadata = findLabelsOfType(bindingListEntry.getValue(), ConfigurationKind.METADATA)
                     .collect(Collectors.toMap(entry -> entry.getKey().getAdditional(), Entry::getValue));
 
             if (services.isEmpty()) {
@@ -89,13 +91,13 @@ public class DockerContainerServiceDescriptionFactory {
 
     }
 
-    private static Stream<Entry<ParsedLabel, String>> findLabelsOfType(List<Entry<ParsedLabel, String>> labels,
-            Label type) {
-        return labels.stream().filter(e -> e.getKey().getLabelKind() == type);
+    private static Stream<Entry<ParsedServiceConfiguration, String>> findLabelsOfType(List<Entry<ParsedServiceConfiguration, String>> labels,
+            ConfigurationKind type) {
+        return labels.stream().filter(e -> e.getKey().getConfigurationKind() == type);
     }
 
-    private static Optional<Entry<ParsedLabel, String>> findLabelOfType(List<Entry<ParsedLabel, String>> labels,
-            Label type) {
+    private static Optional<Entry<ParsedServiceConfiguration, String>> findLabelOfType(List<Entry<ParsedServiceConfiguration, String>> labels,
+            ConfigurationKind type) {
         return findLabelsOfType(labels, type).findFirst();
     }
 
