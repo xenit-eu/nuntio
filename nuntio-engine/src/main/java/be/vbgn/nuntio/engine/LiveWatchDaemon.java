@@ -15,8 +15,7 @@ public class LiveWatchDaemon implements Runnable {
 
     private ServicePlatform platform;
     private ServiceRegistry registry;
-    private ChecksProcessor healthcheckProcessor;
-    private PlatformServicesRegistrar platformServicesRegistrar;
+    private ServiceMapper serviceMapper;
     private LiveWatchProperties liveWatchProperties;
 
     @Override
@@ -42,25 +41,24 @@ public class LiveWatchDaemon implements Runnable {
 
     private void handleEvent(PlatformServiceEvent platformServiceEvent) {
         switch (platformServiceEvent.getEventType()) {
-            case STOP:
-                registry.findAll(platformServiceEvent.getIdentifier().getSharedIdentifier())
-                        .forEach(registry::unregisterService);
-                break;
             case START:
                 platform.find(platformServiceEvent.getIdentifier())
                         .ifPresent(platformServiceDescription -> {
-                            platformServicesRegistrar.registerService(platformServiceDescription);
+                            serviceMapper.registerService(platformServiceDescription);
                         });
-                // no break
+                break;
             case PAUSE:
             case UNPAUSE:
             case HEALTHCHECK:
                 platform.find(platformServiceEvent.getIdentifier())
                         .ifPresent(platformServiceDescription -> {
-                            registry.findAll(platformServiceDescription)
-                                    .forEach(registryIdentifier -> healthcheckProcessor.updateChecks(
-                                            registryIdentifier, platformServiceDescription));
+                            serviceMapper.updateServiceChecks(platformServiceDescription);
                         });
+                break;
+            case STOP:
+                registry.findAll(platformServiceEvent.getIdentifier().getSharedIdentifier())
+                        .forEach(registry::unregisterService);
+                break;
 
         }
     }

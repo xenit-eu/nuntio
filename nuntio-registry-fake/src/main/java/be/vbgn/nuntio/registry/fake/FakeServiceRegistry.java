@@ -17,6 +17,7 @@ public class FakeServiceRegistry implements ServiceRegistry {
     private final Map<FakeServiceIdentifier, RegistryServiceDescription> services = new HashMap<>();
     private final Map<CheckKey, CheckValue> checks = new HashMap<>();
 
+
     @Value
     private static class CheckKey {
 
@@ -71,8 +72,11 @@ public class FakeServiceRegistry implements ServiceRegistry {
     public void updateCheck(RegistryServiceIdentifier serviceIdentifier, CheckType checkType, CheckStatus checkStatus,
             String message) {
         assert serviceIdentifier instanceof FakeServiceIdentifier;
-        checks.replace(new CheckKey((FakeServiceIdentifier) serviceIdentifier, checkType),
-                new CheckValue(checkStatus, message));
+        CheckKey checkKey = new CheckKey((FakeServiceIdentifier) serviceIdentifier, checkType);
+        if(!checks.containsKey(checkKey)) {
+            throw new IllegalStateException("Updating a check that is not first registered is not possible: "+checkKey);
+        }
+        checks.replace(checkKey, new CheckValue(checkStatus, message));
     }
 
     public Map<FakeServiceIdentifier, RegistryServiceDescription> getServices() {
@@ -110,4 +114,8 @@ public class FakeServiceRegistry implements ServiceRegistry {
                 .collect(Collectors.toSet());
     }
 
+    public void clear() {
+        services.clear();
+        checks.clear();
+    }
 }

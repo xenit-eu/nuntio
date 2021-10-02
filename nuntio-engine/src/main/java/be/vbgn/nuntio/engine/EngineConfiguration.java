@@ -6,11 +6,9 @@ import be.vbgn.nuntio.engine.EngineProperties.AntiEntropyProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.scheduling.annotation.SchedulingConfigurer;
-import org.springframework.scheduling.config.ScheduledTaskRegistrar;
 
 @Configuration
-public class EngineConfiguration implements SchedulingConfigurer {
+public class EngineConfiguration {
 
     @Bean
     @ConfigurationProperties(value = "nuntio.engine", ignoreUnknownFields = false)
@@ -20,48 +18,34 @@ public class EngineConfiguration implements SchedulingConfigurer {
 
     @Bean
     AntiEntropyDaemon antiEntropyDaemon(ServicePlatform servicePlatform, ServiceRegistry serviceRegistry,
-            ChecksProcessor checksProcessor, PlatformServicesRegistrar platformServicesRegistrar,
+            ServiceMapper serviceMapper, PlatformServicesRegistrar platformServicesRegistrar,
             EngineProperties engineProperties) {
         AntiEntropyProperties antiEntropyProperties = engineProperties.getAntiEntropy();
         if (!antiEntropyProperties.isEnabled()) {
             return null;
         }
-        return new AntiEntropyDaemon(servicePlatform, serviceRegistry, checksProcessor,
-                platformServicesRegistrar, antiEntropyProperties);
-    }
-
-    @Bean
-    ChecksProcessor checksProcessor(ServiceRegistry serviceRegistry, EngineProperties engineProperties) {
-        return new ChecksProcessor(serviceRegistry, engineProperties.getChecks());
+        return new AntiEntropyDaemon(servicePlatform, serviceRegistry,
+                platformServicesRegistrar, serviceMapper, antiEntropyProperties);
     }
 
     @Bean
     LiveWatchDaemon liveWatchDaemon(ServicePlatform servicePlatform, ServiceRegistry serviceRegistry,
-            ChecksProcessor checksProcessor, PlatformServicesRegistrar platformServicesRegistrar,
+           ServiceMapper serviceMapper,
             EngineProperties engineProperties) {
         if (!engineProperties.getLive().isEnabled()) {
             return null;
         }
-        return new LiveWatchDaemon(servicePlatform, serviceRegistry, checksProcessor, platformServicesRegistrar,
-                engineProperties.getLive());
+        return new LiveWatchDaemon(servicePlatform, serviceRegistry, serviceMapper, engineProperties.getLive());
     }
 
     @Bean
     PlatformServicesRegistrar platformServicesRegistrar(ServicePlatform servicePlatform,
-            ServiceRegistry serviceRegistry, PlatformToRegistryMapper platformToRegistryMapper,
-            ChecksProcessor checksProcessor) {
-        return new PlatformServicesRegistrar(servicePlatform, serviceRegistry, platformToRegistryMapper,
-                checksProcessor);
+            ServiceMapper serviceMapper) {
+        return new PlatformServicesRegistrar(servicePlatform, serviceMapper);
     }
 
     @Bean
-    PlatformToRegistryMapper platformToRegistryMapper() {
-        return new PlatformToRegistryMapper();
-    }
-
-
-    @Override
-    public void configureTasks(ScheduledTaskRegistrar taskRegistrar) {
-
+    ServiceMapper serviceMapper(ServiceRegistry serviceRegistry, EngineProperties engineProperties) {
+        return new ServiceMapper(serviceRegistry, engineProperties);
     }
 }

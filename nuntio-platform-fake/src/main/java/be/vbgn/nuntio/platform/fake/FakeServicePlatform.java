@@ -102,11 +102,16 @@ public class FakeServicePlatform implements ServicePlatform {
     }
 
     public void healthcheckService(FakeServiceIdentifier serviceIdentifier, PlatformServiceHealth serviceHealth) {
-        modifyService(serviceIdentifier, hasState(PlatformServiceState.PAUSED),
+        modifyService(serviceIdentifier, hasState(PlatformServiceState.RUNNING),
                 builder -> builder.health(Optional.of(serviceHealth)));
     }
 
     public void destroyService(FakeServiceIdentifier serviceIdentifier) {
         services.remove(serviceIdentifier);
+    }
+
+    public void clear() {
+        services.clear();
+        serviceEventQueue.clear();
     }
 }

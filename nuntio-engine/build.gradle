@@ -16,4 +16,5 @@ dependencies {
     testImplementation project(':nuntio-registry-fake')
     testImplementation project(':nuntio-integration')
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.awaitility:awaitility:4.1.0'
 }

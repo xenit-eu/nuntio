@@ -1,21 +1,30 @@
 package be.vbgn.nuntio.engine;
 
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import be.vbgn.nuntio.api.platform.PlatformServiceConfiguration;
+import be.vbgn.nuntio.api.platform.PlatformServiceDescription;
 import be.vbgn.nuntio.api.platform.PlatformServiceState;
 import be.vbgn.nuntio.api.platform.ServiceBinding;
 import be.vbgn.nuntio.api.platform.SimplePlatformServiceDescription;
+import be.vbgn.nuntio.api.registry.CheckStatus;
+import be.vbgn.nuntio.api.registry.CheckType;
 import be.vbgn.nuntio.engine.PlatformServicesRegistrarTest.FakeConfiguration;
 import be.vbgn.nuntio.integration.EnableNuntio;
 import be.vbgn.nuntio.platform.fake.FakePlatformConfiguration;
 import be.vbgn.nuntio.platform.fake.FakeServiceIdentifier;
 import be.vbgn.nuntio.platform.fake.FakeServicePlatform;
+import be.vbgn.nuntio.registry.fake.FakeCheck;
 import be.vbgn.nuntio.registry.fake.FakeRegistryConfiguration;
 import be.vbgn.nuntio.registry.fake.FakeServiceRegistry;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -48,7 +57,12 @@ class PlatformServicesRegistrarTest {
     @Autowired
     PlatformServicesRegistrar platformServicesRegistrar;
 
-    @AfterTestMethod
+    @BeforeEach
+    void resetServices() {
+        servicePlatform.clear();
+        serviceRegistry.clear();
+    }
+
     @Test
     void registersExistingServices() {
         var serviceIdentifier = FakeServiceIdentifier.create();
@@ -75,6 +89,13 @@ class PlatformServicesRegistrarTest {
         assertEquals("80", registeredService.getPort());
         assertEquals(Optional.empty(), registeredService.getAddress());
         assertEquals(Collections.emptySet(), registeredService.getTags());
+
+        var registeredServiceId = serviceRegistry.getServices().keySet().stream().findFirst().get();
+        var registeredChecks = serviceRegistry.getChecksForService(registeredServiceId)
+                .stream().map(FakeCheck::withoutMessage).collect(Collectors.toSet());
+
+        assertEquals(Collections.singleton(FakeCheck.withoutMessage(CheckType.HEARTBEAT, CheckStatus.PASSING)), registeredChecks);
+
     }
 
 
@@ -116,6 +137,6 @@ class PlatformServicesRegistrarTest {
 
         platformServicesRegistrar.registerAllServices();
 
-        assertTrue(serviceRegistry.findServices().isEmpty(), "Other service is unregistered");
+        assertEquals(1, serviceRegistry.findServices().size(), "Other service is not unregistered because it has disappeared");
     }
 }
