@@ -11,6 +11,9 @@ import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 
 /**
  * Parses a docker label for nuntio into its constituents.
@@ -32,9 +35,9 @@ public class NuntioLabelsParser implements ServiceConfigurationParser {
 
     static {
         String labelKindNoAdditionalPattern =
-                "(?<labelKind>" + createLabelPattern(Predicate.not(ConfigurationKind::isAcceptsAdditional)) + ")";
+                "(?<labelKind>" + createLabelPattern(Predicate.not(LabelKind::isAcceptsAdditional)) + ")";
         String labelKindWithAdditionalPattern =
-                "(?<labelKind>" + createLabelPattern(ConfigurationKind::isAcceptsAdditional) + ")";
+                "(?<labelKind>" + createLabelPattern(LabelKind::isAcceptsAdditional) + ")";
         String serviceBindingPattern = "(?:(?<serviceBindingProtocol>udp|tcp):)?(?<serviceBindingPort>[0-9]+)";
         LABEL_WITHOUT_ADDITIONAL_PATTERN = Pattern.compile(
                 "^(?:" + serviceBindingPattern + "/)?" + labelKindNoAdditionalPattern + "$");
@@ -45,9 +48,9 @@ public class NuntioLabelsParser implements ServiceConfigurationParser {
                 "^(?:" + serviceBindingPattern + "/)?" + labelKindWithAdditionalPattern + additionalPattern + "$");
     }
 
-    private static String createLabelPattern(Predicate<? super ConfigurationKind> filter) {
-        return Arrays.stream(ConfigurationKind.values()).filter(filter)
-                .map(ConfigurationKind::getIdentifier).collect(
+    private static String createLabelPattern(Predicate<? super LabelKind> filter) {
+        return Arrays.stream(LabelKind.values()).filter(filter)
+                .map(LabelKind::getIdentifier).collect(
                         Collectors.joining("|"));
     }
 
@@ -75,14 +78,14 @@ public class NuntioLabelsParser implements ServiceConfigurationParser {
 
         Matcher labelWithoutAdditionalMatch = LABEL_WITHOUT_ADDITIONAL_PATTERN.matcher(withoutPrefix);
         if (labelWithoutAdditionalMatch.matches()) {
-            return ConfigurationKind.find(labelWithoutAdditionalMatch.group("labelKind"))
-                    .map(labelKind -> new ParsedServiceConfiguration(labelKind,
+            return LabelKind.find(labelWithoutAdditionalMatch.group("labelKind"))
+                    .map(labelKind -> new ParsedServiceConfiguration(labelKind.getConfigurationKind(),
                             createServiceBindingFromMatch(labelWithoutAdditionalMatch), null));
         }
         Matcher labelWithAdditionalMatch = LABEL_WITH_ADDITIONAL_PATTERN.matcher(withoutPrefix);
         if (labelWithAdditionalMatch.matches()) {
-            return ConfigurationKind.find(labelWithAdditionalMatch.group("labelKind"))
-                    .map(labelKind -> new ParsedServiceConfiguration(labelKind,
+            return LabelKind.find(labelWithAdditionalMatch.group("labelKind"))
+                    .map(labelKind -> new ParsedServiceConfiguration(labelKind.getConfigurationKind(),
                             createServiceBindingFromMatch(labelWithAdditionalMatch),
                             labelWithAdditionalMatch.group("labelAdditional")));
         }
@@ -101,6 +104,32 @@ public class NuntioLabelsParser implements ServiceConfigurationParser {
         }
 
         return ServiceBinding.fromPortAndProtocol(serviceBindingPort, serviceBindingProtocol);
+    }
+
+    @AllArgsConstructor
+    private enum LabelKind {
+        SERVICE("service", false, ConfigurationKind.SERVICE),
+        TAGS("tags", false, ConfigurationKind.TAGS),
+        METADATA("metadata", true, ConfigurationKind.METADATA),
+        ;
+
+        @Getter(value = AccessLevel.PRIVATE)
+        private final String identifier;
+
+        @Getter(value = AccessLevel.PRIVATE)
+        private final boolean acceptsAdditional;
+
+        @Getter(value = AccessLevel.PRIVATE)
+        private final ConfigurationKind configurationKind;
+
+        static Optional<LabelKind> find(String identifier) {
+            for (LabelKind configurationKind : values()) {
+                if (configurationKind.getIdentifier().equals(identifier)) {
+                    return Optional.of(configurationKind);
+                }
+            }
+            return Optional.empty();
+        }
     }
 
 

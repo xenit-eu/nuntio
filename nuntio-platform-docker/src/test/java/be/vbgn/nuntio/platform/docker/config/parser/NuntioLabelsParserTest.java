@@ -14,10 +14,11 @@ class NuntioLabelsParserTest {
     private final NuntioLabelsParser labelsParser = new NuntioLabelsParser("nuntio");
 
     private ParsedServiceConfiguration getParsedLabelFrom(String label) {
-
-        Map<String, String> labels = Map.of(label, "value1", "unrelated-label", "def");
-
-        Map<ParsedServiceConfiguration, String> parsedLabels = labelsParser.parseContainerMetadata(new SimpleContainerMetadata(Collections.emptyMap(), labels));
+        SimpleContainerMetadata containerMetadata = SimpleContainerMetadata.builder()
+                .label(label, "value1")
+                .label("unrelated-label", "def")
+                .build();
+        Map<ParsedServiceConfiguration, String> parsedLabels = labelsParser.parseContainerMetadata(containerMetadata);
 
         return parsedLabels.keySet().stream().findFirst().get();
     }
@@ -78,9 +79,10 @@ class NuntioLabelsParserTest {
 
     @Test
     void parseLabelsUnknownKind() {
-        Map<String, String> labels = Map.of("nuntio/8080/bla", "value1");
-
-        Map<ParsedServiceConfiguration, String> parsedLabels = labelsParser.parseContainerMetadata(new SimpleContainerMetadata(Collections.emptyMap(), labels));
+        SimpleContainerMetadata containerMetadata = SimpleContainerMetadata.builder()
+                .label("nuntio/8080/bla", "value1")
+                .build();
+        Map<ParsedServiceConfiguration, String> parsedLabels = labelsParser.parseContainerMetadata(containerMetadata);
 
         assertEquals(Collections.emptyMap(), parsedLabels);
     }

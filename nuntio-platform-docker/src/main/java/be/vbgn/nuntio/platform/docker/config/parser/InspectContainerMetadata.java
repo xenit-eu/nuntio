@@ -1,15 +1,33 @@
 package be.vbgn.nuntio.platform.docker.config.parser;
 
+import be.vbgn.nuntio.api.platform.ServiceBinding;
 import com.github.dockerjava.api.command.InspectContainerResponse;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 
 @AllArgsConstructor
 public class InspectContainerMetadata implements ContainerMetadata {
 
     private final InspectContainerResponse inspectContainerResponse;
+
+    @Override
+    public String getImageName() {
+        return inspectContainerResponse.getConfig().getImage();
+    }
+
+    @Override
+    public Set<ServiceBinding> getInternalPortBindings() {
+        return inspectContainerResponse.getNetworkSettings().getPorts()
+                .getBindings()
+                .keySet()
+                .stream()
+                .map(exposedPort -> ServiceBinding.fromPortAndProtocol(exposedPort.getPort(), exposedPort.getProtocol().toString()))
+                .collect(Collectors.toSet());
+    }
 
     public Map<String, String> getEnvironment() {
         String[] environmentVarsStr = inspectContainerResponse.getConfig().getEnv();
