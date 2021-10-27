@@ -13,6 +13,7 @@ public class DockerProperties {
 
     private PortBindConfiguration bind = PortBindConfiguration.PUBLISHED;
     private NuntioLabelProperties nuntioLabel =new NuntioLabelProperties();
+    private RegistratorCompatibleProperties registratorCompat = new RegistratorCompatibleProperties();
 
     public enum PortBindConfiguration {
         PUBLISHED,
@@ -38,5 +39,10 @@ public class DockerProperties {
     public static class NuntioLabelProperties {
         private boolean enabled = true;
         private String prefix = "nuntio.vbgn.be";
+    }
+
+    @Data
+    public static class RegistratorCompatibleProperties {
+        private boolean enabled = false;
     }
 }

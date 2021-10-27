@@ -15,8 +15,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
-@Component
-@ConditionalOnProperty(value = "nuntio.docker.bind", havingValue = "published")
 @Slf4j
 public class PublishedPortConfigurationModifier implements ServiceConfigurationModifier {
 

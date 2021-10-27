@@ -11,6 +11,7 @@ import be.vbgn.nuntio.api.platform.ServiceBinding;
 import be.vbgn.nuntio.api.platform.SimplePlatformServiceDescription;
 import be.vbgn.nuntio.api.registry.CheckStatus;
 import be.vbgn.nuntio.api.registry.CheckType;
+import be.vbgn.nuntio.api.registry.RegistryServiceDescription;
 import be.vbgn.nuntio.engine.PlatformServicesRegistrarTest.FakeConfiguration;
 import be.vbgn.nuntio.integration.EnableNuntio;
 import be.vbgn.nuntio.platform.fake.FakePlatformConfiguration;
@@ -19,6 +20,8 @@ import be.vbgn.nuntio.platform.fake.FakeServicePlatform;
 import be.vbgn.nuntio.registry.fake.FakeCheck;
 import be.vbgn.nuntio.registry.fake.FakeRegistryConfiguration;
 import be.vbgn.nuntio.registry.fake.FakeServiceRegistry;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.Set;
@@ -265,5 +268,52 @@ class AntiEntropyDaemonTest {
         antiEntropyDaemon.runAntiEntropy();
 
         assertEquals(0, serviceRegistry.getServices().size(), "Service is unregistered");
+    }
+
+    @Test
+    void updatesChangeInPublishedPort() {
+        var serviceIdentifier = FakeServiceIdentifier.create();
+        var service = SimplePlatformServiceDescription.builder()
+                .identifier(serviceIdentifier)
+                .state(PlatformServiceState.RUNNING)
+                .serviceConfiguration(PlatformServiceConfiguration.builder()
+                        .serviceBinding(ServiceBinding.fromPort(80))
+                        .serviceName("proxy-front")
+                        .build())
+                .build();
+        servicePlatform.createService(service);
+
+        antiEntropyDaemon.runAntiEntropy();
+
+        assertEquals(Arrays.asList(
+                RegistryServiceDescription.builder()
+                        .sharedIdentifier(serviceIdentifier.getSharedIdentifier())
+                        .name("proxy-front")
+                        .port("80")
+                        .build()
+
+        ), new ArrayList<>(serviceRegistry.getServices().values()));
+
+        var serviceWithOtherPort = SimplePlatformServiceDescription.builder()
+                .identifier(serviceIdentifier)
+                .state(PlatformServiceState.RUNNING)
+                .serviceConfiguration(PlatformServiceConfiguration.builder()
+                        .serviceBinding(ServiceBinding.fromPort(81))
+                        .serviceName("proxy-front")
+                        .build())
+                .build();
+        servicePlatform.createService(serviceWithOtherPort);
+
+        antiEntropyDaemon.runAntiEntropy();
+
+        assertEquals(Arrays.asList(
+                RegistryServiceDescription.builder()
+                        .sharedIdentifier(serviceIdentifier.getSharedIdentifier())
+                        .name("proxy-front")
+                        .port("81")
+                        .build()
+
+        ), new ArrayList<>(serviceRegistry.getServices().values()));
+
     }
 }

@@ -27,14 +27,17 @@ public class ServiceMapper {
         return serviceDescription.getServiceConfigurations()
                 .stream()
                 .flatMap(configuration -> configuration.getServiceNames().stream()
-                        .map(serviceName -> new RegistryServiceDescription(
-                                serviceName,
-                                serviceDescription.getIdentifier().getSharedIdentifier(),
-                                configuration.getServiceBinding().getIp(),
-                                configuration.getServiceBinding().getPort().orElseThrow(),
-                                configuration.getServiceTags(),
-                                createMetadata(configuration)
-                        )))
+                        .peek(serviceName -> log.debug("Creating registry service {} for platform {}", serviceName, configuration))
+                        .map(serviceName -> RegistryServiceDescription.builder()
+                                .name(serviceName)
+                                .sharedIdentifier(serviceDescription.getIdentifier().getSharedIdentifier())
+                                .address(configuration.getServiceBinding().getIp())
+                                .port(configuration.getServiceBinding().getPort().orElseThrow())
+                                .tags(configuration.getServiceTags())
+                                .metadata(createMetadata(configuration))
+                                .build()
+                        )
+                )
                 .collect(Collectors.toSet());
     }
 

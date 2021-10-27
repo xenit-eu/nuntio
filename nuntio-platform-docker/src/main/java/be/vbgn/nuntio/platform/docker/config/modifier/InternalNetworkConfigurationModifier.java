@@ -45,7 +45,7 @@ public class InternalNetworkConfigurationModifier implements ServiceConfiguratio
     private final Object networkNamesCacheLock = new Object();
 
     public InternalNetworkConfigurationModifier(@Autowired DockerClient dockerClient,
-            @Value("${nuntio.docker.bind.filter:}") String networkFilter) {
+             String networkFilter) {
         this(filter -> {
             var networksCmd = dockerClient.listNetworksCmd();
             filter.forEach(networksCmd::withFilter);

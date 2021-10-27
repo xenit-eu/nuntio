@@ -39,7 +39,7 @@ public class FakeServiceRegistry implements ServiceRegistry {
 
     @Override
     public RegistryServiceIdentifier registerService(RegistryServiceDescription description) {
-        FakeServiceIdentifier serviceIdentifier = FakeServiceIdentifier.create(description.getSharedIdentifier());
+        FakeServiceIdentifier serviceIdentifier = FakeServiceIdentifier.create(description.getSharedIdentifier(), description);
         services.put(serviceIdentifier, description);
         return serviceIdentifier;
     }
