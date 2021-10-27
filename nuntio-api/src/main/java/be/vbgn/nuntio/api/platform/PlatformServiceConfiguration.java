@@ -1,5 +1,7 @@
 package be.vbgn.nuntio.api.platform;
 
+import be.vbgn.nuntio.api.identifier.PlatformIdentifier;
+import be.vbgn.nuntio.api.identifier.ServiceIdentifier;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -7,6 +9,7 @@ import java.util.Set;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.NonNull;
 import lombok.Singular;
 import lombok.Value;
 
@@ -16,7 +19,9 @@ import lombok.Value;
 @Builder(toBuilder = true)
 public class PlatformServiceConfiguration {
 
+    @NonNull
     ServiceBinding serviceBinding;
+
     @Singular
     Set<String> serviceNames;
     @Singular
@@ -26,7 +31,8 @@ public class PlatformServiceConfiguration {
     @Singular("internalMetadata")
     Map<String, String> internalMetadata;
 
-    public PlatformServiceConfiguration(ServiceBinding serviceBinding, Set<String> serviceNames,
+
+    public PlatformServiceConfiguration( ServiceBinding serviceBinding, Set<String> serviceNames,
             Set<String> serviceTags, Map<String, String> serviceMetadata) {
         this(
                 serviceBinding,
@@ -37,16 +43,19 @@ public class PlatformServiceConfiguration {
         );
     }
 
+
     public PlatformServiceConfiguration withBinding(ServiceBinding newBinding) {
-        return new PlatformServiceConfiguration(newBinding, serviceNames, serviceTags,
-                serviceMetadata, internalMetadata);
+        return toBuilder()
+                .serviceBinding(newBinding)
+                .build();
     }
 
     public PlatformServiceConfiguration withInternalMetadata(Map<String, String> additionalMetadata) {
         Map<String, String> internalMetadata = new HashMap<>(this.internalMetadata);
         internalMetadata.putAll(additionalMetadata);
-        return new PlatformServiceConfiguration(serviceBinding, serviceNames, serviceTags, serviceMetadata,
-                Collections.unmodifiableMap(internalMetadata));
+        return toBuilder()
+                .internalMetadata(Collections.unmodifiableMap(internalMetadata))
+                .build();
     }
 
     public PlatformServiceConfiguration withInternalMetadata(String key, String value) {

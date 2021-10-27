@@ -19,10 +19,8 @@ import be.vbgn.nuntio.platform.fake.FakeServicePlatform;
 import be.vbgn.nuntio.registry.fake.FakeCheck;
 import be.vbgn.nuntio.registry.fake.FakeRegistryConfiguration;
 import be.vbgn.nuntio.registry.fake.FakeServiceRegistry;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,7 +28,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
-import org.springframework.test.context.event.annotation.AfterTestMethod;
 
 @SpringBootTest(classes = FakeConfiguration.class, properties = {
         "nuntio.live.enabled=false",

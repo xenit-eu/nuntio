@@ -35,8 +35,8 @@ class DockerContainerServiceDescriptionTest {
         assertEquals("my-funny-name", description.getIdentifier().getContainerName());
         assertEquals("aabbcc", description.getIdentifier().getContainerId());
 
-        assertEquals(new DockerContainerIdServiceIdentifier("aabbcc").getSharedIdentifier(),
-                description.getIdentifier().getSharedIdentifier());
+        assertEquals(new DockerContainerIdServiceIdentifier("aabbcc").getPlatformIdentifier(),
+                description.getIdentifier().getPlatformIdentifier());
     }
 
     @Test

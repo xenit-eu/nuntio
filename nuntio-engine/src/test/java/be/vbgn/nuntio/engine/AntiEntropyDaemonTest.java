@@ -3,6 +3,7 @@ package be.vbgn.nuntio.engine;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import be.vbgn.nuntio.api.identifier.ServiceIdentifier;
 import be.vbgn.nuntio.api.platform.PlatformServiceConfiguration;
 import be.vbgn.nuntio.api.platform.PlatformServiceHealth;
 import be.vbgn.nuntio.api.platform.PlatformServiceHealth.HealthStatus;
@@ -273,13 +274,14 @@ class AntiEntropyDaemonTest {
     @Test
     void updatesChangeInPublishedPort() {
         var serviceIdentifier = FakeServiceIdentifier.create();
+        var serviceConfiguration = PlatformServiceConfiguration.builder()
+                .serviceBinding(ServiceBinding.fromPort(80))
+                .serviceName("proxy-front")
+                .build();
         var service = SimplePlatformServiceDescription.builder()
                 .identifier(serviceIdentifier)
                 .state(PlatformServiceState.RUNNING)
-                .serviceConfiguration(PlatformServiceConfiguration.builder()
-                        .serviceBinding(ServiceBinding.fromPort(80))
-                        .serviceName("proxy-front")
-                        .build())
+                .serviceConfiguration(serviceConfiguration)
                 .build();
         servicePlatform.createService(service);
 
@@ -287,20 +289,22 @@ class AntiEntropyDaemonTest {
 
         assertEquals(Arrays.asList(
                 RegistryServiceDescription.builder()
-                        .sharedIdentifier(serviceIdentifier.getSharedIdentifier())
+                        .platformIdentifier(serviceIdentifier.getPlatformIdentifier())
+                        .serviceIdentifier(ServiceIdentifier.of(serviceIdentifier.getPlatformIdentifier(), serviceConfiguration.getServiceBinding()))
                         .name("proxy-front")
                         .port("80")
                         .build()
 
         ), new ArrayList<>(serviceRegistry.getServices().values()));
 
+        var serviceConfigurationWithOtherPort = PlatformServiceConfiguration.builder()
+                .serviceBinding(ServiceBinding.fromPort(81))
+                .serviceName("proxy-front")
+                .build();
         var serviceWithOtherPort = SimplePlatformServiceDescription.builder()
                 .identifier(serviceIdentifier)
                 .state(PlatformServiceState.RUNNING)
-                .serviceConfiguration(PlatformServiceConfiguration.builder()
-                        .serviceBinding(ServiceBinding.fromPort(81))
-                        .serviceName("proxy-front")
-                        .build())
+                .serviceConfiguration(serviceConfigurationWithOtherPort)
                 .build();
         servicePlatform.createService(serviceWithOtherPort);
 
@@ -308,7 +312,8 @@ class AntiEntropyDaemonTest {
 
         assertEquals(Arrays.asList(
                 RegistryServiceDescription.builder()
-                        .sharedIdentifier(serviceIdentifier.getSharedIdentifier())
+                        .platformIdentifier(serviceIdentifier.getPlatformIdentifier())
+                        .serviceIdentifier(ServiceIdentifier.of(serviceIdentifier.getPlatformIdentifier(), serviceConfigurationWithOtherPort.getServiceBinding()))
                         .name("proxy-front")
                         .port("81")
                         .build()

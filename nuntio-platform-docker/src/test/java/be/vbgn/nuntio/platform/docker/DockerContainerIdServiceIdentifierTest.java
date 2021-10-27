@@ -2,26 +2,26 @@ package be.vbgn.nuntio.platform.docker;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import be.vbgn.nuntio.api.SharedIdentifier;
+import be.vbgn.nuntio.api.identifier.PlatformIdentifier;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 class DockerContainerIdServiceIdentifierTest {
 
     @Test
-    void fromSharedIdentifierRoundtrip() {
+    void fromPlatformIdentifierRoundtrip() {
         var identifier = new DockerContainerIdServiceIdentifier("aabbcc");
-        SharedIdentifier sharedIdentifier = identifier.getSharedIdentifier();
+        PlatformIdentifier platformIdentifier = identifier.getPlatformIdentifier();
 
-        var optionalIdentifier = DockerContainerIdServiceIdentifier.fromSharedIdentifier(sharedIdentifier);
+        var optionalIdentifier = DockerContainerIdServiceIdentifier.fromPlatformIdentifier(platformIdentifier);
         assertEquals(Optional.of(identifier), optionalIdentifier);
     }
 
     @Test
-    void fromSharedIdentifierInvalid() {
-        SharedIdentifier sharedIdentifier = SharedIdentifier.of("abc");
+    void fromPlatformIdentifierInvalid() {
+        PlatformIdentifier platformIdentifier = PlatformIdentifier.of("abc");
 
-        var optionalIdentifier = DockerContainerIdServiceIdentifier.fromSharedIdentifier(sharedIdentifier);
+        var optionalIdentifier = DockerContainerIdServiceIdentifier.fromPlatformIdentifier(platformIdentifier);
         assertEquals(Optional.empty(), optionalIdentifier);
     }
 

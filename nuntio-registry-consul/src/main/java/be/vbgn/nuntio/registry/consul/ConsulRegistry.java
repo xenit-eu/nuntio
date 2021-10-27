@@ -1,6 +1,7 @@
 package be.vbgn.nuntio.registry.consul;
 
-import be.vbgn.nuntio.api.SharedIdentifier;
+import be.vbgn.nuntio.api.identifier.PlatformIdentifier;
+import be.vbgn.nuntio.api.identifier.ServiceIdentifier;
 import be.vbgn.nuntio.api.registry.CheckStatus;
 import be.vbgn.nuntio.api.registry.CheckType;
 import be.vbgn.nuntio.api.registry.RegistryServiceDescription;
@@ -23,6 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class ConsulRegistry implements ServiceRegistry {
 
+    private static final String NUNTIO_PID = "nuntio-pid";
     private static final String NUNTIO_SID = "nuntio-sid";
     private ConsulClient consulClient;
     private ConsulProperties consulConfig;
@@ -34,8 +36,11 @@ public class ConsulRegistry implements ServiceRegistry {
                 .values()
                 .stream()
                 .filter(service -> service.getMeta().containsKey(NUNTIO_SID))
+                .filter(service -> service.getMeta().containsKey(NUNTIO_PID))
                 .map(service -> new ConsulServiceIdentifier(service.getService(), service.getId(),
-                        SharedIdentifier.parse(service.getMeta().get(NUNTIO_SID))))
+                        PlatformIdentifier.parse(service.getMeta().get(NUNTIO_PID)),
+                        ServiceIdentifier.parse(service.getMeta().get(NUNTIO_SID))
+                ))
                 .collect(Collectors.toSet());
     }
 
@@ -55,7 +60,8 @@ public class ConsulRegistry implements ServiceRegistry {
         newService.setTags(new ArrayList<>(description.getTags()));
         Map<String, String> metadata = new HashMap<>(description.getMetadata());
 
-        metadata.put(NUNTIO_SID, description.getSharedIdentifier().toMachineString());
+        metadata.put(NUNTIO_PID, description.getPlatformIdentifier().toMachineString());
+        metadata.put(NUNTIO_SID, description.getServiceIdentifier().toMachineString());
 
         newService.setMeta(metadata);
 
@@ -77,7 +83,7 @@ public class ConsulRegistry implements ServiceRegistry {
     }
 
     private static String createCheckId(ConsulServiceIdentifier registryServiceIdentifier, CheckType checkType) {
-        return registryServiceIdentifier.getSharedIdentifier()
+        return registryServiceIdentifier.getServiceIdentifier()
                 .withParts(registryServiceIdentifier.getServiceId(), checkType.getCheckId())
                 .toMachineString();
     }

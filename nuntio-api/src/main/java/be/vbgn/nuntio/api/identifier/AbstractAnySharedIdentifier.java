@@ -1,4 +1,4 @@
-package be.vbgn.nuntio.api;
+package be.vbgn.nuntio.api.identifier;
 
 import java.util.Arrays;
 import java.util.Base64;
@@ -9,19 +9,21 @@ import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 
-@AllArgsConstructor(access = AccessLevel.PRIVATE)
+@AllArgsConstructor(access = AccessLevel.PROTECTED)
 @EqualsAndHashCode
-public final class SharedIdentifier {
+class AbstractAnySharedIdentifier<T extends AbstractAnySharedIdentifier<T>> implements AnySharedIdentifier<T> {
+
+    @FunctionalInterface
+    protected interface SharedIdentifierFactory<T extends AbstractAnySharedIdentifier<T>> {
+        T fromParts(String[] parts);
+    }
 
     private static final String ENCODED_PART_PREFIX = "b64:";
     private static final String PART_SEPARATOR = "-";
+    private final SharedIdentifierFactory<T> factory;
     private final String[] identifierParts;
     private static final Encoder ENCODER = Base64.getEncoder().withoutPadding();
     private static final Decoder DECODER = Base64.getDecoder();
-
-    public static SharedIdentifier of(String... parts) {
-        return new SharedIdentifier(parts);
-    }
 
     public String getContext() {
         return part(-1);
@@ -31,8 +33,12 @@ public final class SharedIdentifier {
         return identifierParts[i + 1];
     }
 
-    public static SharedIdentifier parse(String str) {
-        return new SharedIdentifier(Arrays.stream(str.split(PART_SEPARATOR))
+    String[] getIdentifierParts() {
+        return identifierParts;
+    }
+
+    static <R extends AbstractAnySharedIdentifier<R>> R parse(String str, SharedIdentifierFactory<R> factory) {
+        return factory.fromParts(Arrays.stream(str.split(PART_SEPARATOR))
                 .map(encodedPart -> {
                     if (!encodedPart.startsWith(ENCODED_PART_PREFIX)) {
                         return encodedPart;
@@ -53,7 +59,7 @@ public final class SharedIdentifier {
                 .collect(Collectors.joining(PART_SEPARATOR));
     }
 
-    public SharedIdentifier withParts(String... additionalParts) {
+    public T withParts(String... additionalParts) {
         String[] newArray = new String[identifierParts.length + additionalParts.length];
         for (int i = 0; i < identifierParts.length; i++) {
             newArray[i] = identifierParts[i];
@@ -61,7 +67,7 @@ public final class SharedIdentifier {
         for (int i = 0; i < additionalParts.length; i++) {
             newArray[identifierParts.length + i] = additionalParts[i];
         }
-        return new SharedIdentifier(newArray);
+        return factory.fromParts(newArray);
     }
 
     public String toHumanString() {
@@ -72,6 +78,6 @@ public final class SharedIdentifier {
 
     @Override
     public String toString() {
-        return "SharedIdentifier(" + String.join(" ", identifierParts) + ")";
+        return getClass().getSimpleName()+"(" + String.join(" ", identifierParts) + ")";
     }
 }

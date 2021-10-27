@@ -1,5 +1,6 @@
 package be.vbgn.nuntio.engine;
 
+import be.vbgn.nuntio.api.identifier.ServiceIdentifier;
 import be.vbgn.nuntio.api.platform.PlatformServiceConfiguration;
 import be.vbgn.nuntio.api.platform.PlatformServiceDescription;
 import be.vbgn.nuntio.api.platform.PlatformServiceState;
@@ -10,6 +11,7 @@ import be.vbgn.nuntio.api.registry.RegistryServiceIdentifier;
 import be.vbgn.nuntio.api.registry.ServiceRegistry;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
@@ -30,7 +32,9 @@ public class ServiceMapper {
                         .peek(serviceName -> log.debug("Creating registry service {} for platform {}", serviceName, configuration))
                         .map(serviceName -> RegistryServiceDescription.builder()
                                 .name(serviceName)
-                                .sharedIdentifier(serviceDescription.getIdentifier().getSharedIdentifier())
+                                .platformIdentifier(serviceDescription.getIdentifier().getPlatformIdentifier())
+                                .serviceIdentifier(ServiceIdentifier.of(serviceDescription.getIdentifier()
+                                        .getPlatformIdentifier(), configuration.getServiceBinding()))
                                 .address(configuration.getServiceBinding().getIp())
                                 .port(configuration.getServiceBinding().getPort().orElseThrow())
                                 .tags(configuration.getServiceTags())
@@ -39,6 +43,10 @@ public class ServiceMapper {
                         )
                 )
                 .collect(Collectors.toSet());
+    }
+
+    private Set<RegistryServiceIdentifier> findServicesForPlatform(PlatformServiceDescription platformServiceDescription) {
+        return serviceRegistry.findAll(platformServiceDescription.getIdentifier().getPlatformIdentifier());
     }
 
     private Map<String, String> createMetadata(PlatformServiceConfiguration configuration) {
@@ -85,7 +93,7 @@ public class ServiceMapper {
     }
 
     public void unregisterService(PlatformServiceDescription platformServiceDescription) {
-        var serviceIdentifiers = serviceRegistry.findAll(platformServiceDescription);
+        var serviceIdentifiers = findServicesForPlatform(platformServiceDescription);
 
         serviceIdentifiers.forEach(registryServiceIdentifier -> {
             serviceRegistry.unregisterService(registryServiceIdentifier);
@@ -112,7 +120,7 @@ public class ServiceMapper {
     }
 
     public void updateServiceChecks(PlatformServiceDescription platformServiceDescription) {
-        var serviceIdentifiers = serviceRegistry.findAll(platformServiceDescription);
+        var serviceIdentifiers = findServicesForPlatform(platformServiceDescription);
 
         serviceIdentifiers.forEach(registryServiceIdentifier -> {
             if(engineProperties.getChecks().isHeartbeat()) {

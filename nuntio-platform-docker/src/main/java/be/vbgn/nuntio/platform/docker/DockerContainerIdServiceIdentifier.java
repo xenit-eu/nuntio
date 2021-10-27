@@ -1,6 +1,6 @@
 package be.vbgn.nuntio.platform.docker;
 
-import be.vbgn.nuntio.api.SharedIdentifier;
+import be.vbgn.nuntio.api.identifier.PlatformIdentifier;
 import be.vbgn.nuntio.api.platform.PlatformServiceIdentifier;
 import java.util.Optional;
 import lombok.Value;
@@ -15,14 +15,14 @@ public class DockerContainerIdServiceIdentifier implements PlatformServiceIdenti
     String containerId;
 
     @Override
-    public SharedIdentifier getSharedIdentifier() {
-        return SharedIdentifier.of(SHARED_IDENTIFIER_ID, containerId);
+    public PlatformIdentifier getPlatformIdentifier() {
+        return PlatformIdentifier.of(SHARED_IDENTIFIER_ID, containerId);
     }
 
-    public static Optional<DockerContainerIdServiceIdentifier> fromSharedIdentifier(SharedIdentifier sharedIdentifier) {
-        if (!sharedIdentifier.getContext().equals(SHARED_IDENTIFIER_ID)) {
+    public static Optional<DockerContainerIdServiceIdentifier> fromPlatformIdentifier(PlatformIdentifier platformIdentifier) {
+        if (!platformIdentifier.getContext().equals(SHARED_IDENTIFIER_ID)) {
             return Optional.empty();
         }
-        return Optional.of(new DockerContainerIdServiceIdentifier(sharedIdentifier.part(0)));
+        return Optional.of(new DockerContainerIdServiceIdentifier(platformIdentifier.part(0)));
     }
 }

@@ -34,7 +34,7 @@ public class AntiEntropyDaemon implements SchedulingConfigurer {
             // Remove services that have been published in any registry but have been removed from docker
             // Also updates healthchecks for services that still exist
             for (RegistryServiceIdentifier service : registry.findServices()) {
-                var platformService = platform.find(service.getSharedIdentifier());
+                var platformService = platform.find(service.getPlatformIdentifier());
                 platformService.map(PlatformServiceDescription::getIdentifier).ifPresent(knownServices::add);
                 platformService.ifPresentOrElse(platformServiceDescription -> {
                     if(platformServiceDescription.getState() == PlatformServiceState.STOPPED) {

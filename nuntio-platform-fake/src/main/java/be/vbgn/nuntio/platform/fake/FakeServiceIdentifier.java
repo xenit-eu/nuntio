@@ -1,6 +1,6 @@
 package be.vbgn.nuntio.platform.fake;
 
-import be.vbgn.nuntio.api.SharedIdentifier;
+import be.vbgn.nuntio.api.identifier.PlatformIdentifier;
 import be.vbgn.nuntio.api.platform.PlatformServiceIdentifier;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -20,16 +20,16 @@ public class FakeServiceIdentifier implements PlatformServiceIdentifier {
         return new FakeServiceIdentifier(SERVICE_ID_GENERATOR.incrementAndGet());
     }
 
-    public static Optional<FakeServiceIdentifier> fromSharedIdentifier(SharedIdentifier sharedIdentifier) {
-        if (sharedIdentifier.getContext().equals(CONTEXT)) {
-            return Optional.of(new FakeServiceIdentifier(Integer.parseInt(sharedIdentifier.part(0), 16)));
+    public static Optional<FakeServiceIdentifier> fromPlatformIdentifier(PlatformIdentifier platformIdentifier) {
+        if (platformIdentifier.getContext().equals(CONTEXT)) {
+            return Optional.of(new FakeServiceIdentifier(Integer.parseInt(platformIdentifier.part(0), 16)));
         } else {
             return Optional.empty();
         }
     }
 
     @Override
-    public SharedIdentifier getSharedIdentifier() {
-        return SharedIdentifier.of(CONTEXT, Integer.toHexString(serviceId));
+    public PlatformIdentifier getPlatformIdentifier() {
+        return PlatformIdentifier.of(CONTEXT, Integer.toHexString(serviceId));
     }
 }

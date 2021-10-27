@@ -1,4 +1,4 @@
-package be.vbgn.nuntio.api;
+package be.vbgn.nuntio.api.identifier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -10,7 +10,21 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-class SharedIdentifierTest {
+class AbstractAnySharedIdentifierTest {
+
+    static class SharedIdentifier extends AbstractAnySharedIdentifier<SharedIdentifier>  {
+        private SharedIdentifier(String[] identifierParts) {
+            super(SharedIdentifier::new, identifierParts);
+        }
+
+        public static SharedIdentifier parse(String identifier) {
+            return parse(identifier, SharedIdentifier::new);
+        }
+
+        public static SharedIdentifier of(String ...parts) {
+            return new SharedIdentifier(parts);
+        }
+    }
 
     static Stream<Arguments> factory() {
         return Stream.of(

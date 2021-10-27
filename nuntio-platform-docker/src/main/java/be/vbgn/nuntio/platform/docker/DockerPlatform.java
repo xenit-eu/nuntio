@@ -1,6 +1,6 @@
 package be.vbgn.nuntio.platform.docker;
 
-import be.vbgn.nuntio.api.SharedIdentifier;
+import be.vbgn.nuntio.api.identifier.PlatformIdentifier;
 import be.vbgn.nuntio.api.platform.PlatformServiceDescription;
 import be.vbgn.nuntio.api.platform.PlatformServiceEvent;
 import be.vbgn.nuntio.api.platform.PlatformServiceIdentifier;
@@ -54,8 +54,8 @@ public class DockerPlatform implements ServicePlatform {
     }
 
     @Override
-    public Optional<PlatformServiceDescription> find(SharedIdentifier sharedIdentifier) {
-        return DockerContainerIdServiceIdentifier.fromSharedIdentifier(sharedIdentifier)
+    public Optional<PlatformServiceDescription> find(PlatformIdentifier platformIdentifier) {
+        return DockerContainerIdServiceIdentifier.fromPlatformIdentifier(platformIdentifier)
                 .flatMap(this::find);
     }
 

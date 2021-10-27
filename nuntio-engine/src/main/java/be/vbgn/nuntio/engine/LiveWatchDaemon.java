@@ -56,7 +56,7 @@ public class LiveWatchDaemon implements Runnable {
                         });
                 break;
             case STOP:
-                registry.findAll(platformServiceEvent.getIdentifier().getSharedIdentifier())
+                registry.findAll(platformServiceEvent.getIdentifier().getPlatformIdentifier())
                         .forEach(registry::unregisterService);
                 break;
 

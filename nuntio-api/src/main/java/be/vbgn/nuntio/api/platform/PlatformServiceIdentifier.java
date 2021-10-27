@@ -1,8 +1,8 @@
 package be.vbgn.nuntio.api.platform;
 
-import be.vbgn.nuntio.api.SharedIdentifier;
+import be.vbgn.nuntio.api.identifier.PlatformIdentifier;
 
 public interface PlatformServiceIdentifier {
 
-    SharedIdentifier getSharedIdentifier();
+    PlatformIdentifier getPlatformIdentifier();
 }
