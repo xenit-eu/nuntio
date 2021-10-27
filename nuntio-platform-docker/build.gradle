@@ -15,6 +15,8 @@ dependencies {
     implementation 'com.github.docker-java:docker-java-core'
     implementation 'com.github.docker-java:docker-java-transport-httpclient5'
 
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.20'
+    testCompileOnly 'org.projectlombok:lombok:1.18.20'
     testImplementation 'org.junit.jupiter:junit-jupiter:5.7.2'
     testImplementation 'org.mockito:mockito-core:2.21.0'
 }

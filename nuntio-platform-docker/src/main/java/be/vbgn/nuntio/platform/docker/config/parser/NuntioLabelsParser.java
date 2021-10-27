@@ -1,19 +1,26 @@
 package be.vbgn.nuntio.platform.docker.config.parser;
 
+import be.vbgn.nuntio.api.platform.PlatformServiceConfiguration;
 import be.vbgn.nuntio.api.platform.ServiceBinding;
-import be.vbgn.nuntio.platform.docker.config.parser.ParsedServiceConfiguration.ConfigurationKind;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.Value;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Parses a docker label for nuntio into its constituents.
@@ -26,6 +33,7 @@ import lombok.Getter;
  * * nuntio/tcp:80/tags
  * * nuntio/udp:65/metadata/my-metadata
  */
+@Slf4j
 public class NuntioLabelsParser implements ServiceConfigurationParser {
 
     private final String labelPrefix;
@@ -59,7 +67,52 @@ public class NuntioLabelsParser implements ServiceConfigurationParser {
     }
 
     @Override
-    public Map<ParsedServiceConfiguration, String> parseContainerMetadata(ContainerMetadata containerMetadata) {
+    public Set<PlatformServiceConfiguration> toServiceConfigurations(ContainerMetadata containerMetadata) {
+        var bindingsWithConfiguration = parseContainerMetadata(containerMetadata)
+                .entrySet()
+                .stream()
+                .collect(Collectors.groupingBy(entry -> entry.getKey().getBinding()));
+
+        Set<PlatformServiceConfiguration> serviceConfigurations = new HashSet<>();
+
+        for (Entry<ServiceBinding, List<Entry<ParsedServiceConfiguration, String>>> bindingListEntry : bindingsWithConfiguration.entrySet()) {
+            var services = findLabelOfType(bindingListEntry.getValue(), ConfigurationKind.SERVICE)
+                    .map(Entry::getValue)
+                    .map(Util::splitByComma);
+            var tags = findLabelOfType(bindingListEntry.getValue(), ConfigurationKind.TAGS)
+                    .map(Entry::getValue)
+                    .map(Util::splitByComma)
+                    .orElse(Collections.emptyList());
+            var metadata = findLabelsOfType(bindingListEntry.getValue(), ConfigurationKind.METADATA)
+                    .collect(Collectors.toMap(entry -> entry.getKey().getAdditional(), Entry::getValue));
+
+            if (services.isEmpty()) {
+                log.warn("Binding {} is missing a service but has other configurations.",
+                        bindingListEntry.getKey());
+            } else if (services.get().isEmpty()) {
+                log.warn("Binding {} has no service names.", bindingListEntry.getKey());
+            }
+
+             PlatformServiceConfiguration.builder()
+                    .serviceNames(services.orElse(Collections.emptyList()))
+                    .serviceTags(tags)
+                    .serviceMetadata(metadata)
+                            .build();
+
+            services
+                    .filter(service -> !service.isEmpty())
+                    .map(service -> PlatformServiceConfiguration.builder()
+                            .serviceBinding(bindingListEntry.getKey())
+                            .serviceNames(service)
+                            .serviceTags(tags)
+                            .serviceMetadata(metadata)
+                            .build()
+                    ).ifPresent(serviceConfigurations::add);
+        }
+        return serviceConfigurations;
+    }
+
+    private Map<ParsedServiceConfiguration, String> parseContainerMetadata(ContainerMetadata containerMetadata) {
         Map<ParsedServiceConfiguration, String> parsedLabels = new HashMap<>();
         for (Entry<String, String> labelEntry : containerMetadata.getLabels().entrySet()) {
             Optional<ParsedServiceConfiguration> parsedLabel = parseLabel(labelEntry.getKey());
@@ -106,6 +159,7 @@ public class NuntioLabelsParser implements ServiceConfigurationParser {
         return ServiceBinding.fromPortAndProtocol(serviceBindingPort, serviceBindingProtocol);
     }
 
+
     @AllArgsConstructor
     private enum LabelKind {
         SERVICE("service", false, ConfigurationKind.SERVICE),
@@ -122,7 +176,7 @@ public class NuntioLabelsParser implements ServiceConfigurationParser {
         @Getter(value = AccessLevel.PRIVATE)
         private final ConfigurationKind configurationKind;
 
-        static Optional<LabelKind> find(String identifier) {
+        private static Optional<LabelKind> find(String identifier) {
             for (LabelKind configurationKind : values()) {
                 if (configurationKind.getIdentifier().equals(identifier)) {
                     return Optional.of(configurationKind);
@@ -130,6 +184,32 @@ public class NuntioLabelsParser implements ServiceConfigurationParser {
             }
             return Optional.empty();
         }
+    }
+
+    private static Stream<Entry<ParsedServiceConfiguration, String>> findLabelsOfType(List<Entry<ParsedServiceConfiguration, String>> labels,
+            ConfigurationKind type) {
+        return labels.stream().filter(e -> e.getKey().getConfigurationKind() == type);
+    }
+
+    private static Optional<Entry<ParsedServiceConfiguration, String>> findLabelOfType(List<Entry<ParsedServiceConfiguration, String>> labels,
+            ConfigurationKind type) {
+        return findLabelsOfType(labels, type).findFirst();
+    }
+
+    @Value
+    private class ParsedServiceConfiguration {
+
+        ConfigurationKind configurationKind;
+        ServiceBinding binding;
+        String additional;
+
+
+    }
+
+    private enum ConfigurationKind {
+        SERVICE,
+        TAGS,
+        METADATA
     }
 
 

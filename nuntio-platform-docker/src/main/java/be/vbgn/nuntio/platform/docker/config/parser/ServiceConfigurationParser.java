@@ -1,7 +1,8 @@
 package be.vbgn.nuntio.platform.docker.config.parser;
 
-import java.util.Map;
+import be.vbgn.nuntio.api.platform.PlatformServiceConfiguration;
+import java.util.Set;
 
 public interface ServiceConfigurationParser {
-    Map<ParsedServiceConfiguration, String> parseContainerMetadata(ContainerMetadata containerMetadata);
+    Set<PlatformServiceConfiguration> toServiceConfigurations(ContainerMetadata containerMetadata);
 }

@@ -1,19 +1,17 @@
 package be.vbgn.nuntio.platform.docker.config.parser;
 
+import be.vbgn.nuntio.api.platform.PlatformServiceConfiguration;
 import be.vbgn.nuntio.api.platform.ServiceBinding;
-import be.vbgn.nuntio.platform.docker.config.parser.ParsedServiceConfiguration.ConfigurationKind;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Locale;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.lang.Nullable;
 
 /**
  * Parser implementation that follows Gliderlabs' Registrator rules
@@ -24,14 +22,14 @@ import org.springframework.lang.Nullable;
 public class RegistratorCompatibleParser implements ServiceConfigurationParser {
 
     @Override
-    public Map<ParsedServiceConfiguration, String> parseContainerMetadata(ContainerMetadata containerMetadata) {
+    public Set<PlatformServiceConfiguration> toServiceConfigurations(ContainerMetadata containerMetadata) {
         Map<String, String> configuration = new HashMap<>();
         configuration.putAll(containerMetadata.getEnvironment());
         configuration.putAll(containerMetadata.getLabels());
 
         boolean hasMultipleBindings = containerMetadata.getInternalPortBindings().size() > 1;
 
-        Map<ParsedServiceConfiguration, String> parsedConfigs = new HashMap<>();
+        Set<PlatformServiceConfiguration> platformServiceConfigurations = new HashSet<>();
         for(ServiceBinding serviceBinding: containerMetadata.getInternalPortBindings()) {
             // If SERVICE_<port>_IGNORE or SERVICE_IGNORE is present, disregard this service
             boolean isIgnore = findValueWithFallback(ConfigKind.IGNORE, serviceBinding, configuration).isPresent();
@@ -40,25 +38,26 @@ public class RegistratorCompatibleParser implements ServiceConfigurationParser {
                 continue;
             }
 
-            String defaultServiceNameSuffix = hasMultipleBindings? "-"+serviceBinding.getPort() :"";
+            var platformServiceBuilder = PlatformServiceConfiguration.builder();
+            platformServiceBuilder.serviceBinding(serviceBinding);
+
+            String defaultServiceNameSuffix = hasMultipleBindings? "-"+serviceBinding.getPort().orElseThrow() :"";
 
             // Find service name: first look at SERVICE_<port>_NAME
             // then at SERVICE_NAME (and suffix it with the port number of there are multiple service bindings)
             // Finally fall back to image base name (also potentially suffixed with port number)
             String serviceName = findValue(ConfigKind.SERVICE_NAME, serviceBinding, configuration)
                     .or(() -> findValue(ConfigKind.SERVICE_NAME, ServiceBinding.ANY, configuration)
-                            .map(defaultServiceName -> {
-                                return defaultServiceName + defaultServiceNameSuffix;
-                            })
+                            .map(defaultServiceName -> defaultServiceName + defaultServiceNameSuffix)
                     )
                     .orElseGet(() -> extractImageBaseName(containerMetadata.getImageName()) + defaultServiceNameSuffix);
 
-            parsedConfigs.put(new ParsedServiceConfiguration(ConfigurationKind.SERVICE, serviceBinding, null), serviceName);
+            platformServiceBuilder.serviceName(serviceName);
 
             // Find service tags: first look at SERVICE_<port>_TAGS, then at SERVICE_TAGS
             findValueWithFallback(ConfigKind.TAGS, serviceBinding, configuration)
                     .ifPresent(tags -> {
-                        parsedConfigs.put(new ParsedServiceConfiguration(ConfigurationKind.TAGS, serviceBinding, null), tags);
+                        platformServiceBuilder.serviceTags(Util.splitByComma(tags));
                     });
 
             Map<String, String> metadata = new HashMap<>();
@@ -70,21 +69,25 @@ public class RegistratorCompatibleParser implements ServiceConfigurationParser {
                 if(parts.length == 3 && parts[1].matches("\\d+")) {
                     // SERVICE_<port>_<key>
                     if(parts[1].equals(serviceBinding.getPort().orElse(null))) {
-                        metadata.put(parts[2], value);
+                        metadata.put(parts[2].toLowerCase(Locale.ROOT), value);
                     }
                 } else {
                     // SERVICE_<key>
                     // Only update when there is no key present yet, because SERVICE_<port>_<key> overrides this value
-                    metadata.putIfAbsent(key.substring("SERVICE_".length()), value);
+                    metadata.putIfAbsent(key.substring("SERVICE_".length()).toLowerCase(Locale.ROOT), value);
                 }
             });
 
             metadata.remove("name");
             metadata.remove("id");
             metadata.remove("tags");
+
+            platformServiceBuilder.serviceMetadata(metadata);
+
+            platformServiceConfigurations.add(platformServiceBuilder.build());
         }
 
-        return parsedConfigs;
+        return platformServiceConfigurations;
     }
 
     private String extractImageBaseName(String imageName) {
@@ -95,7 +98,9 @@ public class RegistratorCompatibleParser implements ServiceConfigurationParser {
 
         var firstColonIndex = serviceNameBase.indexOf(":");
 
-        return (firstColonIndex == -1)?serviceNameBase:serviceNameBase.substring(0, firstColonIndex);
+        return (firstColonIndex == -1)
+                ?serviceNameBase
+                :serviceNameBase.substring(0, firstColonIndex);
     }
 
     private Optional<String> findValueWithFallback(ConfigKind configKind, ServiceBinding serviceBinding, Map<String, String> configuration) {
@@ -106,9 +111,10 @@ public class RegistratorCompatibleParser implements ServiceConfigurationParser {
     private Optional<String> findValue(ConfigKind configKind, ServiceBinding serviceBinding, Map<String, String> configuration) {
         String configKey = "SERVICE"
                 +serviceBinding.getPort().map(port -> "_"+port).orElse("")
-                +configKind.envVarSuffix;
+                +configKind.getEnvVarSuffix();
         return Optional.ofNullable(configuration.get(configKey));
     }
+
 
     @AllArgsConstructor
     private enum ConfigKind {
