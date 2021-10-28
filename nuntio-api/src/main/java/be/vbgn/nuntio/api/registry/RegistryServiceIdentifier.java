@@ -5,6 +5,9 @@ import be.vbgn.nuntio.api.identifier.ServiceIdentifier;
 
 public interface RegistryServiceIdentifier {
 
-    PlatformIdentifier getPlatformIdentifier();
+    default PlatformIdentifier getPlatformIdentifier() {
+        return getServiceIdentifier().getPlatformIdentifier();
+    }
+
     ServiceIdentifier getServiceIdentifier();
 }

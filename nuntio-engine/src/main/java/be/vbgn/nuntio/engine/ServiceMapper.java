@@ -46,7 +46,11 @@ public class ServiceMapper {
     }
 
     private Set<RegistryServiceIdentifier> findServicesForPlatform(PlatformServiceDescription platformServiceDescription) {
-        return serviceRegistry.findAll(platformServiceDescription.getIdentifier().getPlatformIdentifier());
+        return platformServiceDescription.getServiceConfigurations()
+                .stream()
+                .flatMap(configuration -> serviceRegistry.findAll(ServiceIdentifier.of(platformServiceDescription.getIdentifier()
+                        .getPlatformIdentifier(), configuration.getServiceBinding())).stream())
+                .collect(Collectors.toSet());
     }
 
     private Map<String, String> createMetadata(PlatformServiceConfiguration configuration) {
@@ -136,6 +140,16 @@ public class ServiceMapper {
                 serviceRegistry.unregisterCheck(registryServiceIdentifier, CheckType.PAUSE);
             }
         });
+    }
+
+    public void pruneNonExistingServices(PlatformServiceDescription platformServiceDescription) {
+        var servicesForPlatform  = serviceRegistry.findAll(platformServiceDescription.getIdentifier().getPlatformIdentifier());
+        var servicesForActiveConfigurations = findServicesForPlatform(platformServiceDescription);
+        servicesForPlatform.removeAll(servicesForActiveConfigurations);
+        if(!servicesForPlatform.isEmpty()) {
+            log.warn("Removing services {} because their configuration does not exist anymore in platform {}", servicesForPlatform, platformServiceDescription);
+        }
+        servicesForPlatform.forEach(serviceRegistry::unregisterService);
     }
 
 }

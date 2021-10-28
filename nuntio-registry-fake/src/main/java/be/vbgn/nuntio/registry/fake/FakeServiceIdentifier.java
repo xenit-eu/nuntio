@@ -9,11 +9,9 @@ import lombok.Value;
 @Value
 public class FakeServiceIdentifier implements RegistryServiceIdentifier {
 
-    private PlatformIdentifier platformIdentifier;
     private ServiceIdentifier serviceIdentifier;
-    private String port;
 
-    public static FakeServiceIdentifier create( RegistryServiceDescription registryServiceDescription) {
-        return new FakeServiceIdentifier(registryServiceDescription.getPlatformIdentifier(), registryServiceDescription.getServiceIdentifier(), registryServiceDescription.getPort());
+    public static FakeServiceIdentifier create(RegistryServiceDescription registryServiceDescription) {
+        return new FakeServiceIdentifier(registryServiceDescription.getServiceIdentifier());
     }
 }

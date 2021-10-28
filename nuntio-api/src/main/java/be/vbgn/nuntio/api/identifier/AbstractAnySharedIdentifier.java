@@ -14,7 +14,7 @@ import lombok.EqualsAndHashCode;
 class AbstractAnySharedIdentifier<T extends AbstractAnySharedIdentifier<T>> implements AnySharedIdentifier<T> {
 
     @FunctionalInterface
-    protected interface SharedIdentifierFactory<T extends AbstractAnySharedIdentifier<T>> {
+    protected interface SharedIdentifierFactory<T extends AnySharedIdentifier<T>> {
         T fromParts(String[] parts);
     }
 
@@ -35,6 +35,10 @@ class AbstractAnySharedIdentifier<T extends AbstractAnySharedIdentifier<T>> impl
 
     String[] getIdentifierParts() {
         return identifierParts;
+    }
+
+    <U extends AnySharedIdentifier<U>> U transmute(SharedIdentifierFactory<U> otherFactory) {
+        return otherFactory.fromParts(identifierParts);
     }
 
     static <R extends AbstractAnySharedIdentifier<R>> R parse(String str, SharedIdentifierFactory<R> factory) {
@@ -68,6 +72,16 @@ class AbstractAnySharedIdentifier<T extends AbstractAnySharedIdentifier<T>> impl
             newArray[identifierParts.length + i] = additionalParts[i];
         }
         return factory.fromParts(newArray);
+    }
+
+    @Override
+    public String[] lastParts(int parts) {
+        return Arrays.copyOfRange(identifierParts, identifierParts.length - parts, identifierParts.length);
+    }
+
+    public T dropParts(int number) {
+        String[] withoutParts = Arrays.copyOfRange(identifierParts, 0, identifierParts.length - number);
+        return factory.fromParts(withoutParts);
     }
 
     public String toHumanString() {

@@ -93,12 +93,6 @@ public class NuntioLabelsParser implements ServiceConfigurationParser {
                 log.warn("Binding {} has no service names.", bindingListEntry.getKey());
             }
 
-             PlatformServiceConfiguration.builder()
-                    .serviceNames(services.orElse(Collections.emptyList()))
-                    .serviceTags(tags)
-                    .serviceMetadata(metadata)
-                            .build();
-
             services
                     .filter(service -> !service.isEmpty())
                     .map(service -> PlatformServiceConfiguration.builder()

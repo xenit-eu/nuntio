@@ -1,5 +1,6 @@
 package be.vbgn.nuntio.engine;
 
+import be.vbgn.nuntio.api.identifier.ServiceIdentifier;
 import be.vbgn.nuntio.api.platform.PlatformServiceDescription;
 import be.vbgn.nuntio.api.platform.PlatformServiceIdentifier;
 import be.vbgn.nuntio.api.platform.PlatformServiceState;
@@ -30,17 +31,18 @@ public class AntiEntropyDaemon implements SchedulingConfigurer {
         try {
             log.debug("Running anti-entropy");
 
-            Set<PlatformServiceIdentifier> knownServices = new HashSet<>();
+            Set<PlatformServiceIdentifier> knownPlatformServices = new HashSet<>();
             // Remove services that have been published in any registry but have been removed from docker
             // Also updates healthchecks for services that still exist
             for (RegistryServiceIdentifier service : registry.findServices()) {
                 var platformService = platform.find(service.getPlatformIdentifier());
-                platformService.map(PlatformServiceDescription::getIdentifier).ifPresent(knownServices::add);
+                platformService.map(PlatformServiceDescription::getIdentifier).ifPresent(knownPlatformServices::add);
                 platformService.ifPresentOrElse(platformServiceDescription -> {
                     if(platformServiceDescription.getState() == PlatformServiceState.STOPPED) {
                         serviceMapper.unregisterService(platformServiceDescription);
                     } else {
                         serviceMapper.updateServiceChecks(platformServiceDescription);
+                        serviceMapper.pruneNonExistingServices(platformServiceDescription);
                     }
                 }, () -> {
                     log.info("Found registered {}, but platform is no longer present", service);
@@ -49,7 +51,7 @@ public class AntiEntropyDaemon implements SchedulingConfigurer {
             }
 
             for(PlatformServiceDescription platformServiceDescription: platform.findAll()) {
-                if(!knownServices.contains(platformServiceDescription.getIdentifier())) {
+                if(!knownPlatformServices.contains(platformServiceDescription.getIdentifier())) {
                     log.info("Found platform {}, but registry does not have a service for it.", platformServiceDescription);
                     serviceMapper.registerService(platformServiceDescription);
                 }

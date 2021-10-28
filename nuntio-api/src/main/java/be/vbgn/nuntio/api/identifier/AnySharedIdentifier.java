@@ -6,9 +6,13 @@ public interface AnySharedIdentifier<T extends AnySharedIdentifier<T>> {
 
     String part(int i);
 
+    String[] lastParts(int parts);
+
     String toMachineString();
 
     T withParts(String... additionalParts);
+
+    T dropParts(int partsToDrop);
 
     String toHumanString();
 

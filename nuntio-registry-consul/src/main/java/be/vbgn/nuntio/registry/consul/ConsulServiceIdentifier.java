@@ -1,6 +1,5 @@
 package be.vbgn.nuntio.registry.consul;
 
-import be.vbgn.nuntio.api.identifier.PlatformIdentifier;
 import be.vbgn.nuntio.api.identifier.ServiceIdentifier;
 import be.vbgn.nuntio.api.registry.RegistryServiceDescription;
 import be.vbgn.nuntio.api.registry.RegistryServiceIdentifier;
@@ -11,14 +10,12 @@ public class ConsulServiceIdentifier implements RegistryServiceIdentifier {
 
     String serviceName;
     String serviceId;
-    PlatformIdentifier platformIdentifier;
     ServiceIdentifier serviceIdentifier;
 
     public static ConsulServiceIdentifier fromDescription(RegistryServiceDescription description) {
         return new ConsulServiceIdentifier(
                 description.getName(),
                 description.getServiceIdentifier().toHumanString(),
-                description.getPlatformIdentifier(),
                 description.getServiceIdentifier()
         );
     }
