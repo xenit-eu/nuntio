@@ -11,9 +11,9 @@ import be.vbgn.nuntio.api.registry.RegistryServiceIdentifier;
 import be.vbgn.nuntio.api.registry.ServiceRegistry;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -28,21 +28,24 @@ public class ServiceMapper {
     private Set<RegistryServiceDescription> createServices(PlatformServiceDescription serviceDescription) {
         return serviceDescription.getServiceConfigurations()
                 .stream()
-                .flatMap(configuration -> configuration.getServiceNames().stream()
-                        .peek(serviceName -> log.debug("Creating registry service {} for platform {}", serviceName, configuration))
-                        .map(serviceName -> RegistryServiceDescription.builder()
-                                .name(serviceName)
-                                .platformIdentifier(serviceDescription.getIdentifier().getPlatformIdentifier())
-                                .serviceIdentifier(ServiceIdentifier.of(serviceDescription.getIdentifier()
-                                        .getPlatformIdentifier(), configuration.getServiceBinding()))
-                                .address(configuration.getServiceBinding().getIp())
-                                .port(configuration.getServiceBinding().getPort().orElseThrow())
-                                .tags(configuration.getServiceTags())
-                                .metadata(createMetadata(configuration))
-                                .build()
-                        )
-                )
+                .flatMap(configuration -> createServices(serviceDescription, configuration))
                 .collect(Collectors.toSet());
+    }
+
+    private Stream<RegistryServiceDescription> createServices(PlatformServiceDescription serviceDescription, PlatformServiceConfiguration configuration) {
+        return configuration.getServiceNames().stream()
+                .peek(serviceName -> log.debug("Creating registry service {} for platform {}", serviceName, configuration))
+                .map(serviceName -> RegistryServiceDescription.builder()
+                        .name(serviceName)
+                        .platformIdentifier(serviceDescription.getIdentifier().getPlatformIdentifier())
+                        .serviceIdentifier(ServiceIdentifier.of(serviceDescription.getIdentifier()
+                                .getPlatformIdentifier(), configuration.getServiceBinding()))
+                        .address(configuration.getServiceBinding().getIp())
+                        .port(configuration.getServiceBinding().getPort().orElseThrow())
+                        .tags(configuration.getServiceTags())
+                        .metadata(createMetadata(configuration))
+                        .build()
+                );
     }
 
     private Set<RegistryServiceIdentifier> findServicesForPlatform(PlatformServiceDescription platformServiceDescription) {
@@ -74,26 +77,32 @@ public class ServiceMapper {
 
     public void registerService(PlatformServiceDescription platformServiceDescription) {
         var services = createServices(platformServiceDescription);
-        services.forEach(registryServiceDescription -> {
-            RegistryServiceIdentifier registryServiceIdentifier = serviceRegistry.registerService(registryServiceDescription);
+        services.forEach(service -> this.registerService(platformServiceDescription, service));
+    }
 
-            if(engineProperties.getChecks().isHeartbeat()) {
-                serviceRegistry.registerCheck(registryServiceIdentifier, CheckType.HEARTBEAT);
-                serviceRegistry.updateCheck(registryServiceIdentifier, CheckType.HEARTBEAT, CheckStatus.PASSING, "Nuntio has registered");
-            }
-            if(engineProperties.getChecks().isHealthcheck() && platformServiceDescription.getHealth().isPresent()) {
-                serviceRegistry.registerCheck(registryServiceIdentifier, CheckType.HEALTHCHECK);
-            }
+    public void registerService(PlatformServiceDescription platformServiceDescription, PlatformServiceConfiguration platformServiceConfiguration) {
+        var services = createServices(platformServiceDescription, platformServiceConfiguration);
+        services.forEach(service -> this.registerService(platformServiceDescription, service));
+    }
 
-            updateHealthCheck(registryServiceIdentifier, platformServiceDescription);
+    private void registerService(PlatformServiceDescription platformServiceDescription, RegistryServiceDescription registryServiceDescription) {
+        RegistryServiceIdentifier registryServiceIdentifier = serviceRegistry.registerService(registryServiceDescription);
 
-            if(platformServiceDescription.getState() == PlatformServiceState.PAUSED) {
-                serviceRegistry.registerCheck(registryServiceIdentifier, CheckType.PAUSE);
-                serviceRegistry.updateCheck(registryServiceIdentifier, CheckType.PAUSE, CheckStatus.FAILING,
-                        "Service is paused");
-            }
-        });
+        if(engineProperties.getChecks().isHeartbeat()) {
+            serviceRegistry.registerCheck(registryServiceIdentifier, CheckType.HEARTBEAT);
+            serviceRegistry.updateCheck(registryServiceIdentifier, CheckType.HEARTBEAT, CheckStatus.PASSING, "Nuntio has registered");
+        }
+        if(engineProperties.getChecks().isHealthcheck() && platformServiceDescription.getHealth().isPresent()) {
+            serviceRegistry.registerCheck(registryServiceIdentifier, CheckType.HEALTHCHECK);
+        }
 
+        updateHealthCheck(registryServiceIdentifier, platformServiceDescription);
+
+        if(platformServiceDescription.getState() == PlatformServiceState.PAUSED) {
+            serviceRegistry.registerCheck(registryServiceIdentifier, CheckType.PAUSE);
+            serviceRegistry.updateCheck(registryServiceIdentifier, CheckType.PAUSE, CheckStatus.FAILING,
+                    "Service is paused");
+        }
     }
 
     public void unregisterService(PlatformServiceDescription platformServiceDescription) {
@@ -146,10 +155,10 @@ public class ServiceMapper {
         var servicesForPlatform  = serviceRegistry.findAll(platformServiceDescription.getIdentifier().getPlatformIdentifier());
         var servicesForActiveConfigurations = findServicesForPlatform(platformServiceDescription);
         servicesForPlatform.removeAll(servicesForActiveConfigurations);
-        if(!servicesForPlatform.isEmpty()) {
-            log.warn("Removing services {} because their configuration does not exist anymore in platform {}", servicesForPlatform, platformServiceDescription);
-        }
-        servicesForPlatform.forEach(serviceRegistry::unregisterService);
+        servicesForPlatform.forEach(serviceIdentifier -> {
+            log.warn("Removing service {} because their configuration does not exist anymore in platform {}", serviceIdentifier, platformServiceDescription);
+            serviceRegistry.unregisterService(serviceIdentifier);
+        });
     }
 
 }

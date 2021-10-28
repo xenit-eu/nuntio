@@ -1,6 +1,7 @@
 package be.vbgn.nuntio.engine;
 
 import be.vbgn.nuntio.api.identifier.ServiceIdentifier;
+import be.vbgn.nuntio.api.platform.PlatformServiceConfiguration;
 import be.vbgn.nuntio.api.platform.PlatformServiceDescription;
 import be.vbgn.nuntio.api.platform.PlatformServiceIdentifier;
 import be.vbgn.nuntio.api.platform.PlatformServiceState;
@@ -31,12 +32,11 @@ public class AntiEntropyDaemon implements SchedulingConfigurer {
         try {
             log.debug("Running anti-entropy");
 
-            Set<PlatformServiceIdentifier> knownPlatformServices = new HashSet<>();
+            Set<ServiceIdentifier> knownServices = new HashSet<>();
             // Remove services that have been published in any registry but have been removed from docker
             // Also updates healthchecks for services that still exist
             for (RegistryServiceIdentifier service : registry.findServices()) {
                 var platformService = platform.find(service.getPlatformIdentifier());
-                platformService.map(PlatformServiceDescription::getIdentifier).ifPresent(knownPlatformServices::add);
                 platformService.ifPresentOrElse(platformServiceDescription -> {
                     if(platformServiceDescription.getState() == PlatformServiceState.STOPPED) {
                         serviceMapper.unregisterService(platformServiceDescription);
@@ -44,20 +44,27 @@ public class AntiEntropyDaemon implements SchedulingConfigurer {
                         serviceMapper.updateServiceChecks(platformServiceDescription);
                         serviceMapper.pruneNonExistingServices(platformServiceDescription);
                     }
+                    knownServices.add(service.getServiceIdentifier());
                 }, () -> {
-                    log.info("Found registered {}, but platform is no longer present", service);
+                    log.warn("Found registered {}, but platform is no longer present", service);
                     registry.unregisterService(service);
                 });
             }
 
             for(PlatformServiceDescription platformServiceDescription: platform.findAll()) {
-                if(!knownPlatformServices.contains(platformServiceDescription.getIdentifier())) {
-                    log.info("Found platform {}, but registry does not have a service for it.", platformServiceDescription);
-                    serviceMapper.registerService(platformServiceDescription);
+                if(platformServiceDescription.getState() != PlatformServiceState.STOPPED) {
+                    for (PlatformServiceConfiguration serviceConfiguration : platformServiceDescription.getServiceConfigurations()) {
+                        var serviceIdentifier = ServiceIdentifier.of(platformServiceDescription.getIdentifier()
+                                .getPlatformIdentifier(), serviceConfiguration.getServiceBinding());
+                        if (!knownServices.contains(serviceIdentifier)) {
+                            log.warn("Found platform {}, but registry is missing the {} service",
+                                    platformServiceDescription, serviceIdentifier);
+                            serviceMapper.registerService(platformServiceDescription, serviceConfiguration);
+                        }
+                    }
                 }
             }
 
-            platformServicesRegistrar.registerAllServices();
         } catch (Throwable e) {
             log.error("Exception during anti-entropy run", e);
         }
