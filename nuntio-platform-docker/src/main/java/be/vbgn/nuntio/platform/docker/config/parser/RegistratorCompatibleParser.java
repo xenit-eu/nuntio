@@ -2,6 +2,7 @@ package be.vbgn.nuntio.platform.docker.config.parser;
 
 import be.vbgn.nuntio.api.platform.PlatformServiceConfiguration;
 import be.vbgn.nuntio.api.platform.ServiceBinding;
+import be.vbgn.nuntio.platform.docker.DockerProperties.RegistratorCompatibleProperties;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Locale;
@@ -19,7 +20,10 @@ import lombok.extern.slf4j.Slf4j;
  * @see <a href="https://gliderlabs.github.io/registrator/latest/user/services/">Registrator User Guide - Service
  */
 @Slf4j
+@AllArgsConstructor
 public class RegistratorCompatibleParser implements ServiceConfigurationParser {
+
+    RegistratorCompatibleProperties registratorCompatibleProperties;
 
     @Override
     public Set<PlatformServiceConfiguration> toServiceConfigurations(ContainerMetadata containerMetadata) {
@@ -46,11 +50,16 @@ public class RegistratorCompatibleParser implements ServiceConfigurationParser {
             // Find service name: first look at SERVICE_<port>_NAME
             // then at SERVICE_NAME (and suffix it with the port number of there are multiple service bindings)
             // Finally fall back to image base name (also potentially suffixed with port number)
-            String serviceName = findValue(ConfigKind.SERVICE_NAME, serviceBinding, configuration)
+            Optional<String> maybeServiceName = findValue(ConfigKind.SERVICE_NAME, serviceBinding, configuration)
                     .or(() -> findValue(ConfigKind.SERVICE_NAME, ServiceBinding.ANY, configuration)
                             .map(defaultServiceName -> defaultServiceName + defaultServiceNameSuffix)
-                    )
-                    .orElseGet(() -> extractImageBaseName(containerMetadata.getImageName()) + defaultServiceNameSuffix);
+                    );
+            // Configurable deviation from registrator behavior to ignore containers by default
+            if(registratorCompatibleProperties.isIgnoreByDefault() && maybeServiceName.isEmpty()) {
+                log.debug("Service binding {} is ignored because no service name is configured", serviceBinding);
+                continue;
+            }
+            String serviceName = maybeServiceName.orElseGet(() -> extractImageBaseName(containerMetadata.getImageName()) + defaultServiceNameSuffix);
 
             platformServiceBuilder.serviceName(serviceName);
 

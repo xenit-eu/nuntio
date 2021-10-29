@@ -74,7 +74,7 @@ public class DockerConfiguration {
     @Bean
     ServiceConfigurationParser registratorCompatibleParser(DockerProperties dockerProperties) {
         if(dockerProperties.getRegistratorCompat().isEnabled()) {
-            return new RegistratorCompatibleParser();
+            return new RegistratorCompatibleParser(dockerProperties.getRegistratorCompat());
         }
         return new NullServiceConfigurationParser();
     }

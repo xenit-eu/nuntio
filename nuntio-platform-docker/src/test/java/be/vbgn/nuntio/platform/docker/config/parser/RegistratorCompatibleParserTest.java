@@ -4,14 +4,25 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import be.vbgn.nuntio.api.platform.PlatformServiceConfiguration;
 import be.vbgn.nuntio.api.platform.ServiceBinding;
+import be.vbgn.nuntio.platform.docker.DockerProperties;
+import be.vbgn.nuntio.platform.docker.DockerProperties.RegistratorCompatibleProperties;
 import java.util.Collections;
 import java.util.Set;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 class RegistratorCompatibleParserTest {
 
-    private ServiceConfigurationParser configurationParser = new RegistratorCompatibleParser();
+
+    private RegistratorCompatibleProperties registratorCompatibleProperties;
+    private ServiceConfigurationParser configurationParser;
+
+    @BeforeEach
+    void setUp() {
+        registratorCompatibleProperties = new RegistratorCompatibleProperties();
+        configurationParser = new RegistratorCompatibleParser(registratorCompatibleProperties);
+    }
 
     @Test
     void singleServiceWithDefaults() {
@@ -33,6 +44,21 @@ class RegistratorCompatibleParserTest {
                 service
         );
 
+    }
+
+    @Test
+    void singleServiceWithDefaults_defaultIgnore() {
+        registratorCompatibleProperties.setIgnoreByDefault(true);
+
+        // docker run -d --name redis.0 -p 10000:6379 progrium/redis
+        var desc = SimpleContainerMetadata.builder()
+                .imageName("progrium/redis")
+                .internalPortBinding(ServiceBinding.fromPort(6379))
+                .build();
+
+        var service = configurationParser.toServiceConfigurations(desc);
+
+        assertEquals(Collections.emptySet(), service);
     }
 
     @Test
@@ -90,6 +116,48 @@ class RegistratorCompatibleParserTest {
 
     @Test
     void multipleServices_withMetadata() {
+        // $ docker run -d --name nginx.0 -p 4443:443 -p 8000:80 \
+        //            -e "SERVICE_443_NAME=https" \
+        //            -e "SERVICE_443_ID=https.12345" \
+        //            -e "SERVICE_443_SNI=enabled" \
+        //            -e "SERVICE_80_NAME=http" \
+        //            -e "SERVICE_TAGS=www" progrium/nginx
+
+        var desc = SimpleContainerMetadata.builder()
+                .imageName("progrium/redis")
+                .internalPortBinding(ServiceBinding.fromPort(443))
+                .internalPortBinding(ServiceBinding.fromPort(80))
+                .environment("SERVICE_443_NAME", "https")
+                .environment("SERVICE_443_ID", "https.12345")
+                .environment("SERVICE_443_SNI", "enabled")
+                .environment("SERVICE_80_NAME", "http")
+                .environment("SERVICE_80_TAGS", "www")
+                .build();
+
+        var service = configurationParser.toServiceConfigurations(desc);
+
+        assertEquals(
+                Set.of(
+                        PlatformServiceConfiguration.builder()
+                                .serviceName("https")
+                                .serviceBinding(ServiceBinding.fromPort(443))
+                                .serviceMetadata("sni", "enabled")
+                                .build(),
+
+                        PlatformServiceConfiguration.builder()
+                                .serviceName("http")
+                                .serviceBinding(ServiceBinding.fromPort(80))
+                                .serviceTag("www")
+                                .build()
+                ),
+                service
+        );
+    }
+
+    @Test
+    void multipleServices_withMetadata_defaultIgnore() {
+        registratorCompatibleProperties.setIgnoreByDefault(true);
+
         // $ docker run -d --name nginx.0 -p 4443:443 -p 8000:80 \
         //            -e "SERVICE_443_NAME=https" \
         //            -e "SERVICE_443_ID=https.12345" \
