@@ -6,7 +6,6 @@ include 'nuntio-bom'
 include 'nuntio-engine'
 include 'nuntio-integration'
 include 'nuntio-platform-docker'
-include 'nuntio-registry-consul'
 include 'nuntio-platform-fake'
+include 'nuntio-registry-consul'
 include 'nuntio-registry-fake'
-

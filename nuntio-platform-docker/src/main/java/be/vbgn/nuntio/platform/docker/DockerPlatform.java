@@ -5,6 +5,7 @@ import be.vbgn.nuntio.api.platform.PlatformServiceDescription;
 import be.vbgn.nuntio.api.platform.PlatformServiceEvent;
 import be.vbgn.nuntio.api.platform.PlatformServiceIdentifier;
 import be.vbgn.nuntio.api.platform.ServicePlatform;
+import be.vbgn.nuntio.api.platform.metrics.PlatformMetrics;
 import be.vbgn.nuntio.api.platform.stream.EventStream;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.exception.NotFoundException;
@@ -24,6 +25,7 @@ public class DockerPlatform implements ServicePlatform {
     private final DockerContainerServiceDescriptionFactory serviceDescriptionFactory;
     private final DockerContainerWatcher containerWatcher;
     private final DockerPlatformEventFactory eventFactory;
+    private final PlatformMetrics platformMetrics;
 
     @Override
     public Set<PlatformServiceDescription> findAll() {
@@ -63,6 +65,7 @@ public class DockerPlatform implements ServicePlatform {
     public EventStream<PlatformServiceEvent> eventStream() {
         return containerWatcher.getEventStream()
                 .map(eventFactory::createEvent)
-                .flatMap(Optional::stream);
+                .flatMap(Optional::stream)
+                .peek(event -> platformMetrics.event(event.getEventType()));
     }
 }

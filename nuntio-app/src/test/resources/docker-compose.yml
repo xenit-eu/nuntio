@@ -4,8 +4,13 @@ services:
     image: ${DOCKER_IMAGE}
     environment:
       JAVA_OPTS_CONSUL: -Dnuntio.consul.host=consul
-      JAVA_OPTS_REGISTRATOR_COMPAT: -Dnuntio.docker.registratorCompat.enabled=true
-      JAVA_OPTS_LOGGING: -Dlogging.level.be.vbgn.nuntio=DEBUG -Dlogging.level.be.vbgn.nuntio.docker.config.modifier.PublishedPortConfigurationModifier=ERROR
+      #JAVA_OPTS_LOGGING_DEBUG: -Dlogging.level.be.vbgn.nuntio=DEBUG
+      JAVA_OPTS_LOGGING_PUBLISHED: -Dlogging.level.be.vbgn.nuntio.platform.docker.config.modifier.PublishedPortConfigurationModifier=ERROR
+    labels:
+      nuntio.vbgn.be/8080/service: nuntio
+      nuntio.vbgn.be/8080/metadata/prometheus-scrape: /actuators/prometheus
+    ports:
+      - ${DOCKER_IP}::8080
     volumes:
       - type: bind
         source: /var/run/docker.sock

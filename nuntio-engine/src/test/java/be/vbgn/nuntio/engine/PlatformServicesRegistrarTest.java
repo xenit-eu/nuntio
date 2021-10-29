@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import be.vbgn.nuntio.api.platform.PlatformServiceConfiguration;
-import be.vbgn.nuntio.api.platform.PlatformServiceDescription;
 import be.vbgn.nuntio.api.platform.PlatformServiceState;
 import be.vbgn.nuntio.api.platform.ServiceBinding;
 import be.vbgn.nuntio.api.platform.SimplePlatformServiceDescription;
@@ -52,7 +51,7 @@ class PlatformServicesRegistrarTest {
     FakeServiceRegistry serviceRegistry;
 
     @Autowired
-    PlatformServicesRegistrar platformServicesRegistrar;
+    PlatformServicesSynchronizer platformServicesRegistrar;
 
     @BeforeEach
     void resetServices() {
@@ -73,7 +72,7 @@ class PlatformServicesRegistrarTest {
                 .build();
         servicePlatform.createService(service);
 
-        platformServicesRegistrar.registerAllServices();
+        platformServicesRegistrar.syncServices();
 
         assertEquals(1, serviceRegistry.findServices().size(), "1 service is registered");
 
@@ -120,19 +119,19 @@ class PlatformServicesRegistrarTest {
                 .build();
         servicePlatform.createService(service2);
 
-        platformServicesRegistrar.registerAllServices();
+        platformServicesRegistrar.syncServices();
 
         assertEquals(2, serviceRegistry.findServices().size(), "2 services registered");
 
         servicePlatform.stopService(serviceIdentifier);
 
-        platformServicesRegistrar.registerAllServices();
+        platformServicesRegistrar.syncServices();
 
         assertEquals(1, serviceRegistry.findServices().size(), "One service is unregistered");
 
         servicePlatform.destroyService(serviceIdentifier2);
 
-        platformServicesRegistrar.registerAllServices();
+        platformServicesRegistrar.syncServices();
 
         assertEquals(0, serviceRegistry.findServices().size(), "Other service is unregistered because it has disappeared");
     }

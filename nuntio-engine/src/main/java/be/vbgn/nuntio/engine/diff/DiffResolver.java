@@ -60,7 +60,11 @@ public class DiffResolver implements Consumer<Diff> {
 
                     if(engineProperties.getChecks().isHeartbeat()) {
                         registry.registerCheck(registryServiceIdentifier, CheckType.HEARTBEAT);
-                        registry.updateCheck(registryServiceIdentifier, CheckType.HEARTBEAT, CheckStatus.PASSING, "Nuntio has registered");
+                        registry.updateCheck(registryServiceIdentifier, CheckType.HEARTBEAT, CheckStatus.PASSING,
+                                "Nuntio has registered\n"
+                                        + platformServiceDescription.getIdentifier()+"\n"
+                                        + platformServiceConfiguration.getServiceBinding()
+                        );
                     }
                     if(engineProperties.getChecks().isHealthcheck() && platformServiceDescription.getHealth().isPresent()) {
                         registry.registerCheck(registryServiceIdentifier, CheckType.HEALTHCHECK);
@@ -78,7 +82,11 @@ public class DiffResolver implements Consumer<Diff> {
 
     public void updateServiceChecks(PlatformServiceDescription platformServiceDescription, PlatformServiceConfiguration serviceConfiguration, RegistryServiceIdentifier registryServiceIdentifier) {
         if(engineProperties.getChecks().isHeartbeat()) {
-            registry.updateCheck(registryServiceIdentifier, CheckType.HEARTBEAT, CheckStatus.PASSING, "Nuntio is watching");
+            registry.updateCheck(registryServiceIdentifier, CheckType.HEARTBEAT, CheckStatus.PASSING,
+                    "Nuntio is watching\n"
+                            + platformServiceDescription.getIdentifier()+"\n"
+                            + serviceConfiguration.getServiceBinding()
+            );
         }
 
         updateHealthCheck(registryServiceIdentifier, platformServiceDescription);

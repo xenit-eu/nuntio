@@ -3,6 +3,7 @@ plugins {
     id 'java'
     id 'eu.xenit.docker' version '5.3.0'
     id 'eu.xenit.docker-compose' version '5.3.0'
+    id 'be.vbgn.ci-detect' version '0.5.0'
 }
 
 dependencies {
@@ -15,6 +16,9 @@ dependencies {
     implementation project(':nuntio-registry-consul')
     implementation project(':nuntio-registry-fake')
     implementation 'org.springframework.boot:spring-boot-starter'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'io.micrometer:micrometer-registry-prometheus'
 
     testImplementation platform('org.testcontainers:testcontainers-bom:1.16.0')
     testImplementation 'org.testcontainers:junit-jupiter'
@@ -25,8 +29,14 @@ createDockerFile {
     smartCopy(bootJar.archiveFile.map({ it.asFile }), "/nuntio.jar")
     dependsOn(bootJar)
     entryPoint("/docker-entrypoint.sh", "java", '$JAVA_OPTS', "-jar", "/nuntio.jar")
+    exposePort(8080)
+    instruction("HEALTHCHECK --timeout=3s CMD curl --fail --silent http://localhost:8080/actuator/health || exit 1")
 }
 
 dockerCompose {
-    useComposeFiles = ['src/test/resources/docker-compose.yml']
+    useComposeFiles = [
+            'src/test/resources/docker-compose.yml'
+    ] + (ci.isCi()?[]: [
+            'src/test/resources/docker-compose-debug.yml'
+    ])
 }

@@ -10,6 +10,7 @@ dependencies {
     implementation project(':nuntio-api')
     implementation 'org.springframework.boot:spring-boot-autoconfigure'
     implementation 'org.slf4j:slf4j-api'
+    implementation 'io.micrometer:micrometer-core'
 
     testImplementation project(':nuntio-platform-fake')
     testImplementation project(':nuntio-registry-fake')

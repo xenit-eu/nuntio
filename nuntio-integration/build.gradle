@@ -10,5 +10,6 @@ dependencies {
     implementation project(':nuntio-api')
     implementation project(':nuntio-engine')
     implementation 'org.springframework.boot:spring-boot-autoconfigure'
+    implementation 'org.springframework.boot:spring-boot-actuator'
     implementation 'org.slf4j:slf4j-api'
 }

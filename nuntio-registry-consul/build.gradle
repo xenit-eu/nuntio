@@ -8,6 +8,7 @@ dependencies {
     implementation platform(project(':nuntio-bom'))
     implementation project(':nuntio-api')
     implementation 'org.springframework.boot:spring-boot-autoconfigure'
+    implementation 'org.springframework.boot:spring-boot-actuator'
     implementation 'org.slf4j:slf4j-api'
 
     implementation 'com.ecwid.consul:consul-api:1.4.5'

@@ -26,6 +26,13 @@ public interface EventStream<T> {
         }
     }
 
+    default EventStream<T> peek(Consumer<? super T> peeker) {
+        return map(item -> {
+            peeker.accept(item);
+            return item;
+        });
+    }
+
     default <U> EventStream<U> map(Function<? super T, ? extends U> mapper) {
         return new MappedEventStream<>(this, mapper);
     }

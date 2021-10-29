@@ -1,7 +1,6 @@
 package be.vbgn.nuntio.api.registry;
 
 import be.vbgn.nuntio.api.identifier.PlatformIdentifier;
-import be.vbgn.nuntio.api.identifier.ServiceIdentifier;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;

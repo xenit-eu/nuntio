@@ -8,8 +8,8 @@ import be.vbgn.nuntio.engine.EngineProperties.AntiEntropyProperties;
 import be.vbgn.nuntio.engine.diff.AddService;
 import be.vbgn.nuntio.engine.diff.DiffResolver;
 import be.vbgn.nuntio.engine.diff.DiffUtil;
-import be.vbgn.nuntio.engine.diff.EqualService;
 import be.vbgn.nuntio.engine.diff.RemoveService;
+import be.vbgn.nuntio.engine.metrics.OperationMetrics;
 import java.time.Duration;
 import java.util.Set;
 import lombok.AllArgsConstructor;
@@ -25,9 +25,13 @@ public class AntiEntropyDaemon implements SchedulingConfigurer {
     private ServicePlatform platform;
     private ServiceRegistry registry;
     private DiffResolver diffResolver;
+    private OperationMetrics antiEntropyMetrics;
     private AntiEntropyProperties antiEntropyProperties;
 
     public void runAntiEntropy() {
+        if(!antiEntropyProperties.isEnabled()) {
+            return;
+        }
         try {
             log.debug("Running anti-entropy");
 
@@ -35,6 +39,7 @@ public class AntiEntropyDaemon implements SchedulingConfigurer {
             Set<? extends PlatformServiceDescription> platformServiceDescriptions = platform.findAll();
 
             DiffUtil.diff(registryServiceIdentifiers, platformServiceDescriptions)
+                    .peek(antiEntropyMetrics)
                     .peek(diff -> {
                         diff.cast(AddService.class).ifPresent(addService -> {
                             log.warn("Found platform {}, but registry is missing the {} service",
@@ -47,6 +52,7 @@ public class AntiEntropyDaemon implements SchedulingConfigurer {
                     .forEach(diffResolver);
         } catch (Throwable e) {
             log.error("Exception during anti-entropy run", e);
+            antiEntropyMetrics.failure();
         }
     }
 
