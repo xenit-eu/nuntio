@@ -1,16 +1,16 @@
 package be.vbgn.nuntio.engine;
 
-import be.vbgn.nuntio.api.identifier.ServiceIdentifier;
-import be.vbgn.nuntio.api.platform.PlatformServiceConfiguration;
 import be.vbgn.nuntio.api.platform.PlatformServiceDescription;
-import be.vbgn.nuntio.api.platform.PlatformServiceIdentifier;
-import be.vbgn.nuntio.api.platform.PlatformServiceState;
 import be.vbgn.nuntio.api.platform.ServicePlatform;
 import be.vbgn.nuntio.api.registry.RegistryServiceIdentifier;
 import be.vbgn.nuntio.api.registry.ServiceRegistry;
 import be.vbgn.nuntio.engine.EngineProperties.AntiEntropyProperties;
+import be.vbgn.nuntio.engine.diff.AddService;
+import be.vbgn.nuntio.engine.diff.DiffResolver;
+import be.vbgn.nuntio.engine.diff.DiffUtil;
+import be.vbgn.nuntio.engine.diff.EqualService;
+import be.vbgn.nuntio.engine.diff.RemoveService;
 import java.time.Duration;
-import java.util.HashSet;
 import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,47 +24,27 @@ public class AntiEntropyDaemon implements SchedulingConfigurer {
 
     private ServicePlatform platform;
     private ServiceRegistry registry;
-    private PlatformServicesRegistrar platformServicesRegistrar;
-    private ServiceMapper serviceMapper;
+    private DiffResolver diffResolver;
     private AntiEntropyProperties antiEntropyProperties;
 
     public void runAntiEntropy() {
         try {
             log.debug("Running anti-entropy");
 
-            Set<ServiceIdentifier> knownServices = new HashSet<>();
-            // Remove services that have been published in any registry but have been removed from docker
-            // Also updates healthchecks for services that still exist
-            for (RegistryServiceIdentifier service : registry.findServices()) {
-                var platformService = platform.find(service.getPlatformIdentifier());
-                platformService.ifPresentOrElse(platformServiceDescription -> {
-                    if(platformServiceDescription.getState() == PlatformServiceState.STOPPED) {
-                        serviceMapper.unregisterService(platformServiceDescription);
-                    } else {
-                        serviceMapper.updateServiceChecks(platformServiceDescription);
-                        serviceMapper.pruneNonExistingServices(platformServiceDescription);
-                    }
-                    knownServices.add(service.getServiceIdentifier());
-                }, () -> {
-                    log.warn("Found registered {}, but platform is no longer present", service);
-                    registry.unregisterService(service);
-                });
-            }
+            Set<? extends RegistryServiceIdentifier> registryServiceIdentifiers = registry.findServices();
+            Set<? extends PlatformServiceDescription> platformServiceDescriptions = platform.findAll();
 
-            for(PlatformServiceDescription platformServiceDescription: platform.findAll()) {
-                if(platformServiceDescription.getState() != PlatformServiceState.STOPPED) {
-                    for (PlatformServiceConfiguration serviceConfiguration : platformServiceDescription.getServiceConfigurations()) {
-                        var serviceIdentifier = ServiceIdentifier.of(platformServiceDescription.getIdentifier()
-                                .getPlatformIdentifier(), serviceConfiguration.getServiceBinding());
-                        if (!knownServices.contains(serviceIdentifier)) {
+            DiffUtil.diff(registryServiceIdentifiers, platformServiceDescriptions)
+                    .peek(diff -> {
+                        diff.cast(AddService.class).ifPresent(addService -> {
                             log.warn("Found platform {}, but registry is missing the {} service",
-                                    platformServiceDescription, serviceIdentifier);
-                            serviceMapper.registerService(platformServiceDescription, serviceConfiguration);
-                        }
-                    }
-                }
-            }
-
+                                    addService.getDescription(), addService.getServiceConfiguration());
+                        });
+                        diff.cast(RemoveService.class).ifPresent(removeService -> {
+                            log.warn("Found registered {}, but platform is no longer present", removeService.getRegistryServiceIdentifier());
+                        });
+                    })
+                    .forEach(diffResolver);
         } catch (Throwable e) {
             log.error("Exception during anti-entropy run", e);
         }

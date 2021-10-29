@@ -4,8 +4,13 @@ import be.vbgn.nuntio.api.platform.PlatformServiceEvent;
 import be.vbgn.nuntio.api.platform.ServicePlatform;
 import be.vbgn.nuntio.api.registry.ServiceRegistry;
 import be.vbgn.nuntio.engine.EngineProperties.LiveWatchProperties;
+import be.vbgn.nuntio.engine.diff.AddService;
+import be.vbgn.nuntio.engine.diff.DiffResolver;
+import be.vbgn.nuntio.engine.diff.DiffUtil;
+import be.vbgn.nuntio.engine.diff.RemoveService;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collections;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -15,7 +20,7 @@ public class LiveWatchDaemon implements Runnable {
 
     private ServicePlatform platform;
     private ServiceRegistry registry;
-    private ServiceMapper serviceMapper;
+    private DiffResolver diffResolver;
     private LiveWatchProperties liveWatchProperties;
 
     @Override
@@ -43,21 +48,36 @@ public class LiveWatchDaemon implements Runnable {
         switch (platformServiceEvent.getEventType()) {
             case START:
                 platform.find(platformServiceEvent.getIdentifier())
-                        .ifPresent(platformServiceDescription -> {
-                            serviceMapper.registerService(platformServiceDescription);
-                        });
+                        .ifPresentOrElse(platformServiceDescription -> {
+                            DiffUtil.diff(Collections.emptySet(), Collections.singleton(platformServiceDescription))
+                                    .peek(diff -> {
+                                        diff.cast(AddService.class).ifPresent(addService -> {
+                                            log.debug("Registering service {} for started platform {}", addService.getServiceConfiguration(), addService.getDescription());
+                                        });
+                                    })
+                                    .forEach(diffResolver);
+                        }, () -> log.error("Failed to register platform service {}: does no longer exist", platformServiceEvent.getIdentifier()));
                 break;
             case PAUSE:
             case UNPAUSE:
             case HEALTHCHECK:
                 platform.find(platformServiceEvent.getIdentifier())
-                        .ifPresent(platformServiceDescription -> {
-                            serviceMapper.updateServiceChecks(platformServiceDescription);
-                        });
+                        .ifPresentOrElse(platformServiceDescription -> {
+                            var registeredServices = registry.findAll(platformServiceDescription.getIdentifier().getPlatformIdentifier());
+                            log.debug("Updating service information for platform {} on services {}", platformServiceDescription, registeredServices);
+                            DiffUtil.diff(registeredServices, Collections.singleton(platformServiceDescription))
+                                    .forEach(diffResolver);
+                        }, () -> log.error("Failed to register platform service {}: does no longer exist", platformServiceEvent.getIdentifier()));
                 break;
             case STOP:
-                registry.findAll(platformServiceEvent.getIdentifier().getPlatformIdentifier())
-                        .forEach(registry::unregisterService);
+                var registeredServices = registry.findAll(platformServiceEvent.getIdentifier().getPlatformIdentifier());
+                DiffUtil.diff(registeredServices, Collections.emptySet())
+                        .peek(diff -> {
+                            diff.cast(RemoveService.class).ifPresent(removeService -> {
+                                log.debug("Unregister service {} for stopped platform {}", removeService.getRegistryServiceIdentifier(), platformServiceEvent.getIdentifier());
+                            });
+                        })
+                        .forEach(diffResolver);
                 break;
 
         }

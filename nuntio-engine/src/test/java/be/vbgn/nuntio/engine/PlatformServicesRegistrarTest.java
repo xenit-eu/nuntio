@@ -134,6 +134,6 @@ class PlatformServicesRegistrarTest {
 
         platformServicesRegistrar.registerAllServices();
 
-        assertEquals(1, serviceRegistry.findServices().size(), "Other service is not unregistered because it has disappeared");
+        assertEquals(0, serviceRegistry.findServices().size(), "Other service is unregistered because it has disappeared");
     }
 }

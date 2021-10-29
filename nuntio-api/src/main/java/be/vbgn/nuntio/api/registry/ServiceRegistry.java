@@ -17,13 +17,6 @@ public interface ServiceRegistry {
                 .collect(Collectors.toSet());
     }
 
-    default Set<RegistryServiceIdentifier> findAll(ServiceIdentifier sharedIdentifier) {
-        return findServices()
-                .stream()
-                .filter(serviceIdentifier -> Objects.equals(serviceIdentifier.getServiceIdentifier(), sharedIdentifier))
-                .collect(Collectors.toSet());
-    }
-
     RegistryServiceIdentifier registerService(RegistryServiceDescription description);
 
     void unregisterService(RegistryServiceIdentifier serviceIdentifier);

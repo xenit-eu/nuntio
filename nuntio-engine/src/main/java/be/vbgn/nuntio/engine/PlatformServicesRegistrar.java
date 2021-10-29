@@ -1,8 +1,9 @@
 package be.vbgn.nuntio.engine;
 
-import be.vbgn.nuntio.api.platform.PlatformServiceDescription;
-import be.vbgn.nuntio.api.platform.PlatformServiceState;
 import be.vbgn.nuntio.api.platform.ServicePlatform;
+import be.vbgn.nuntio.api.registry.ServiceRegistry;
+import be.vbgn.nuntio.engine.diff.DiffResolver;
+import be.vbgn.nuntio.engine.diff.DiffUtil;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -11,16 +12,12 @@ import lombok.extern.slf4j.Slf4j;
 public class PlatformServicesRegistrar {
 
     private final ServicePlatform platform;
-    private ServiceMapper serviceMapper;
+    private final ServiceRegistry registry;
+    private final DiffResolver diffResolver;
 
     public void registerAllServices() {
-        for (PlatformServiceDescription platformServiceDescription : platform.findAll()) {
-            if (platformServiceDescription.getState() == PlatformServiceState.STOPPED) {
-                serviceMapper.unregisterService(platformServiceDescription);
-            } else {
-                serviceMapper.registerService(platformServiceDescription);
-            }
-        }
+        DiffUtil.diff(registry.findServices(), platform.findAll())
+                .forEach(diffResolver);
     }
 
 }

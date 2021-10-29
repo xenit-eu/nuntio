@@ -3,6 +3,7 @@ package be.vbgn.nuntio.engine;
 import be.vbgn.nuntio.api.platform.ServicePlatform;
 import be.vbgn.nuntio.api.registry.ServiceRegistry;
 import be.vbgn.nuntio.engine.EngineProperties.AntiEntropyProperties;
+import be.vbgn.nuntio.engine.diff.DiffResolver;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,35 +18,31 @@ public class EngineConfiguration {
     }
 
     @Bean
-    AntiEntropyDaemon antiEntropyDaemon(ServicePlatform servicePlatform, ServiceRegistry serviceRegistry,
-            ServiceMapper serviceMapper, PlatformServicesRegistrar platformServicesRegistrar,
-            EngineProperties engineProperties) {
+    AntiEntropyDaemon antiEntropyDaemon(ServicePlatform servicePlatform, ServiceRegistry serviceRegistry, DiffResolver diffResolver, EngineProperties engineProperties) {
         AntiEntropyProperties antiEntropyProperties = engineProperties.getAntiEntropy();
         if (!antiEntropyProperties.isEnabled()) {
             return null;
         }
-        return new AntiEntropyDaemon(servicePlatform, serviceRegistry,
-                platformServicesRegistrar, serviceMapper, antiEntropyProperties);
+        return new AntiEntropyDaemon(servicePlatform, serviceRegistry, diffResolver, antiEntropyProperties);
     }
 
     @Bean
-    LiveWatchDaemon liveWatchDaemon(ServicePlatform servicePlatform, ServiceRegistry serviceRegistry,
-           ServiceMapper serviceMapper,
-            EngineProperties engineProperties) {
+    LiveWatchDaemon liveWatchDaemon(ServicePlatform servicePlatform, ServiceRegistry serviceRegistry, DiffResolver diffResolver, EngineProperties engineProperties) {
         if (!engineProperties.getLive().isEnabled()) {
             return null;
         }
-        return new LiveWatchDaemon(servicePlatform, serviceRegistry, serviceMapper, engineProperties.getLive());
+        return new LiveWatchDaemon(servicePlatform, serviceRegistry, diffResolver, engineProperties.getLive());
     }
 
     @Bean
     PlatformServicesRegistrar platformServicesRegistrar(ServicePlatform servicePlatform,
-            ServiceMapper serviceMapper) {
-        return new PlatformServicesRegistrar(servicePlatform, serviceMapper);
+            ServiceRegistry registry,
+            DiffResolver diffResolver) {
+        return new PlatformServicesRegistrar(servicePlatform, registry, diffResolver);
     }
 
     @Bean
-    ServiceMapper serviceMapper(ServiceRegistry serviceRegistry, EngineProperties engineProperties) {
-        return new ServiceMapper(serviceRegistry, engineProperties);
+    DiffResolver diffResolver(ServiceRegistry registry, EngineProperties engineProperties)  {
+        return new DiffResolver(registry, engineProperties);
     }
 }
