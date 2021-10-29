@@ -6,9 +6,7 @@ import be.vbgn.nuntio.api.platform.PlatformServiceDescription;
 import be.vbgn.nuntio.api.platform.PlatformServiceState;
 import be.vbgn.nuntio.api.registry.RegistryServiceIdentifier;
 import java.util.HashSet;
-import java.util.Objects;
 import java.util.Set;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 

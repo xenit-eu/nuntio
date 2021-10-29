@@ -12,34 +12,19 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.lang.Nullable;
 
 @Slf4j
-public class NuntioApplicationNormalStartup implements ApplicationRunner, DisposableBean {
+public class NuntioApplicationNormalStartup implements ApplicationRunner {
 
     private PlatformServicesSynchronizer platformServicesRegistrar;
-    @Nullable
-    private LiveWatchDaemon liveWatchDaemon;
-    @Nullable
-    private Thread liveWatchThread = null;
     private ApplicationContext applicationContext;
 
-    public NuntioApplicationNormalStartup(PlatformServicesSynchronizer platformServicesRegistrar, @Nullable LiveWatchDaemon liveWatchDaemon, ApplicationContext applicationContext) {
+    public NuntioApplicationNormalStartup(PlatformServicesSynchronizer platformServicesRegistrar,
+            ApplicationContext applicationContext) {
         this.platformServicesRegistrar = platformServicesRegistrar;
-        this.liveWatchDaemon = liveWatchDaemon;
         this.applicationContext = applicationContext;
     }
 
-
     @Override
     public void run(ApplicationArguments args) {
-        if (liveWatchDaemon != null) {
-            log.info("Starting live watch daemon thread");
-            liveWatchThread = new Thread(liveWatchDaemon);
-            liveWatchThread.setName("LiveWatchDaemon");
-            liveWatchThread.setDaemon(true);
-            liveWatchThread.start();
-        } else {
-            log.info("Live watching is not enabled");
-        }
-
         log.info("Running existing services registration at application startup");
         try {
             platformServicesRegistrar.syncServices();
@@ -52,18 +37,5 @@ public class NuntioApplicationNormalStartup implements ApplicationRunner, Dispos
                 throw e;
             }
         }
-    }
-
-    public void shutdownLiveWatch() {
-        if(liveWatchThread != null) {
-            log.info("Interrupting live-watch");
-            liveWatchThread.interrupt();
-            liveWatchDaemon = null;
-        }
-    }
-
-    @Override
-    public void destroy() throws Exception {
-        shutdownLiveWatch();
     }
 }

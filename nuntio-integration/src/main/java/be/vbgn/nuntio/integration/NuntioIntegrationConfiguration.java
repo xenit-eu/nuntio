@@ -22,8 +22,9 @@ public class NuntioIntegrationConfiguration {
 
 
     @Bean
-    NuntioApplicationShutdown applicationShutdown(ServiceRegistry serviceRegistry) {
-        return new NuntioApplicationShutdown(serviceRegistry);
+    @ConditionalOnBean(NuntioApplicationNormalStartup.class)
+    NuntioApplicationShutdown applicationShutdown(ServiceRegistry serviceRegistry, LiveWatchManager liveWatchManager, EngineProperties engineProperties) {
+        return new NuntioApplicationShutdown(serviceRegistry, liveWatchManager, engineProperties);
     }
 
     @Bean
@@ -36,13 +37,25 @@ public class NuntioIntegrationConfiguration {
     @Bean
     @ConditionalOnMissingBean(NuntioApplicationStartup.class)
     NuntioApplicationNormalStartup normalStartup(PlatformServicesSynchronizer servicesRegistrar,
-            @Autowired(required = false) LiveWatchDaemon liveWatchDaemon, ApplicationContext applicationContext) {
-        return new NuntioApplicationNormalStartup(servicesRegistrar, liveWatchDaemon, applicationContext);
+            ApplicationContext applicationContext) {
+        return new NuntioApplicationNormalStartup(servicesRegistrar, applicationContext);
     }
 
     @Bean
-    @ConditionalOnBean(NuntioApplicationNormalStartup.class)
-    ShutdownEndpoint shutdownEndpoint(ServiceRegistry serviceRegistry, EngineProperties engineProperties, NuntioApplicationNormalStartup nuntioApplicationNormalStartup, NuntioApplicationShutdown nuntioApplicationShutdown) {
-        return new ShutdownEndpoint(serviceRegistry, engineProperties, nuntioApplicationNormalStartup, nuntioApplicationShutdown);
+    @ConditionalOnBean(LiveWatchDaemon.class)
+    @ConditionalOnMissingBean(NuntioApplicationStartup.class)
+    LiveWatchManager liveWatchManager(LiveWatchDaemon liveWatchDaemon) {
+        return new LiveWatchManagerImpl(liveWatchDaemon);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(LiveWatchManager.class)
+    LiveWatchManager nullLiveWatchManager() {
+        return new NullLiveWatchManager();
+    }
+
+    @Bean
+    ShutdownEndpoint shutdownEndpoint(ServiceRegistry serviceRegistry, EngineProperties engineProperties, LiveWatchManager liveWatchManager, @Autowired(required = false) NuntioApplicationShutdown nuntioApplicationShutdown) {
+        return new ShutdownEndpoint(serviceRegistry, engineProperties, liveWatchManager, nuntioApplicationShutdown);
     }
 }

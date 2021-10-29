@@ -8,6 +8,7 @@ import be.vbgn.nuntio.engine.diff.InitialRegistrationResolver;
 import be.vbgn.nuntio.engine.metrics.LiveWatchMetrics;
 import be.vbgn.nuntio.engine.metrics.OperationMetrics;
 import io.micrometer.core.instrument.MeterRegistry;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -22,6 +23,7 @@ public class EngineConfiguration {
     }
 
     @Bean
+    @ConditionalOnProperty(value = "nuntio.engine.anti-entropy.enabled", matchIfMissing = true)
     AntiEntropyDaemon antiEntropyDaemon(ServicePlatform servicePlatform, ServiceRegistry serviceRegistry, DiffResolver diffResolver, MeterRegistry meterRegistry, EngineProperties engineProperties) {
         AntiEntropyProperties antiEntropyProperties = engineProperties.getAntiEntropy();
         if (!antiEntropyProperties.isEnabled()) {
@@ -31,6 +33,7 @@ public class EngineConfiguration {
     }
 
     @Bean
+    @ConditionalOnProperty(value = "nuntio.engine.live.enabled", matchIfMissing = true)
     LiveWatchDaemon liveWatchDaemon(ServicePlatform servicePlatform, ServiceRegistry serviceRegistry, DiffResolver diffResolver, MeterRegistry meterRegistry, EngineProperties engineProperties) {
         if (!engineProperties.getLive().isEnabled()) {
             return null;

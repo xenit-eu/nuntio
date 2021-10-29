@@ -11,7 +11,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-@Import({NuntioIntegrationConfiguration.class, EngineConfiguration.class})
+@Import({EngineConfiguration.class, NuntioIntegrationConfiguration.class})
 @EnableConfigurationProperties
 @EnableScheduling
 public @interface EnableNuntio {

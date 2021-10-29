@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
@@ -36,6 +37,7 @@ class PlatformServicesRegistrarTest {
 
     @Configuration
     @EnableNuntio
+    @EnableAutoConfiguration
     @Import({
             FakePlatformConfiguration.class,
             FakeRegistryConfiguration.class
