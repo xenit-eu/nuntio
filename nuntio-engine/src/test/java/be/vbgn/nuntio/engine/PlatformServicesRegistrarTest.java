@@ -1,6 +1,5 @@
 package be.vbgn.nuntio.engine;
 
-import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -30,8 +29,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
 @SpringBootTest(classes = FakeConfiguration.class, properties = {
-        "nuntio.live.enabled=false",
-        "nuntio.anti-entropy.enabled=false"
+        "nuntio.engine.live.enabled=false",
+        "nuntio.engine.anti-entropy.enabled=false"
 })
 class PlatformServicesRegistrarTest {
 

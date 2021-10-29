@@ -37,8 +37,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
 @SpringBootTest(classes = FakeConfiguration.class, properties = {
-        "nuntio.live.enabled=false",
-        "nuntio.anti-entropy.enabled=false"
+        "nuntio.engine.live.enabled=false",
+        "nuntio.engine.anti-entropy.enabled=false"
 })
 class AntiEntropyDaemonTest {
 
