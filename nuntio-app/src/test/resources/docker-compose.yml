@@ -1,58 +1,27 @@
 version: '3.4'
 services:
-  nuntio:
-    image: ${DOCKER_IMAGE}
-    environment:
-      JAVA_OPTS_CONSUL: -Dnuntio.consul.host=consul
-      JAVA_OPTS_REGISTRATOR_COMPAT: -Dnuntio.docker.registratorCompat.enabled=true
-      #JAVA_OPTS_LOGGING_DEBUG: -Dlogging.level.be.vbgn.nuntio=DEBUG
-      JAVA_OPTS_LOGGING_PUBLISHED: -Dlogging.level.be.vbgn.nuntio.platform.docker.config.modifier.PublishedPortConfigurationModifier=ERROR
-    labels:
-      nuntio.vbgn.be/8080/service: nuntio
-      nuntio.vbgn.be/8080/metadata/prometheus-scrape: /actuators/prometheus
-    ports:
-      - ${DOCKER_IP}::8080
-    volumes:
-      - type: bind
-        source: /var/run/docker.sock
-        target: /var/run/docker.sock
-
   consul:
     image: docker.io/library/consul:latest
     command:
       - agent
       - '-dev'
       - '-client=0.0.0.0'
-    labels:
-      nuntio.vbgn.be/service: consul-test
-      nuntio.vbgn.be/tags: server,leader
-      nuntio.vbgn.be/metadata/internal-address: consul-test.vbgn.be
     ports:
       - ${DOCKER_IP}::8500
-
-  ctpl:
-    image: hub.xenit.eu/public/consul-template:latest
+  dind:
+    image: docker.io/library/docker:dind
+    privileged: true
+    ports:
+      - ${DOCKER_IP}::2375
     command:
-      - -config=/config
-    volumes:
-      - type: bind
-        source: ./ctpl/config
-        target: /config
-      - type: bind
-        source: ./ctpl/templates
-        target: /templates
-        read_only: true
-      - type: tmpfs
-        target: /output
-
-  nginx_registrator_test:
-    image: docker.io/library/nginx
-    expose:
-      - 80
-      - 443
-      - 8080
+      - dockerd
+      - --tls=false
+      - --host=tcp://0.0.0.0:2375
+      - --host=unix:///var/run/docker.sock
     environment:
-      SERVICE_NAME: nginx
-      SERVICE_80_TAGS: http
-      SERVICE_443_TAGS: https
-      SERVICE_8080_IGNORE: "true"
+      DOCKER_TLS_CERTDIR: '' # Disable docker TLS
+    healthcheck:
+      test:
+        - CMD
+        - docker
+        - info

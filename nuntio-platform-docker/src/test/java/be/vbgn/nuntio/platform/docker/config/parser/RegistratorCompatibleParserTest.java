@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import be.vbgn.nuntio.api.platform.PlatformServiceConfiguration;
 import be.vbgn.nuntio.api.platform.ServiceBinding;
-import be.vbgn.nuntio.platform.docker.DockerProperties;
 import be.vbgn.nuntio.platform.docker.DockerProperties.RegistratorCompatibleProperties;
 import java.util.Collections;
 import java.util.Set;
@@ -48,7 +47,7 @@ class RegistratorCompatibleParserTest {
 
     @Test
     void singleServiceWithDefaults_defaultIgnore() {
-        registratorCompatibleProperties.setIgnoreByDefault(true);
+        registratorCompatibleProperties.setExplicit(true);
 
         // docker run -d --name redis.0 -p 10000:6379 progrium/redis
         var desc = SimpleContainerMetadata.builder()
@@ -156,7 +155,7 @@ class RegistratorCompatibleParserTest {
 
     @Test
     void multipleServices_withMetadata_defaultIgnore() {
-        registratorCompatibleProperties.setIgnoreByDefault(true);
+        registratorCompatibleProperties.setExplicit(true);
 
         // $ docker run -d --name nginx.0 -p 4443:443 -p 8000:80 \
         //            -e "SERVICE_443_NAME=https" \

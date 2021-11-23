@@ -44,6 +44,6 @@ public class DockerProperties {
     @Data
     public static class RegistratorCompatibleProperties {
         private boolean enabled = false;
-        private boolean ignoreByDefault = false;
+        private boolean explicit = false;
     }
 }

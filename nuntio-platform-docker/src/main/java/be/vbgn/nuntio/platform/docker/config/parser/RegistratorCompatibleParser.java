@@ -55,7 +55,7 @@ public class RegistratorCompatibleParser implements ServiceConfigurationParser {
                             .map(defaultServiceName -> defaultServiceName + defaultServiceNameSuffix)
                     );
             // Configurable deviation from registrator behavior to ignore containers by default
-            if(registratorCompatibleProperties.isIgnoreByDefault() && maybeServiceName.isEmpty()) {
+            if(registratorCompatibleProperties.isExplicit() && maybeServiceName.isEmpty()) {
                 log.debug("Service binding {} is ignored because no service name is configured", serviceBinding);
                 continue;
             }

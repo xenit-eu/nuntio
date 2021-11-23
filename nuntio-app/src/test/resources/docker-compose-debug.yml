@@ -3,5 +3,6 @@ services:
   nuntio:
     environment:
       JAVA_OPTS_DEBUG: -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:8000
+      JAVA_OPTS_LOGGING_DEBUG: -Dlogging.level.be.vbgn.nuntio=DEBUG
     ports:
       - ${DOCKER_IP}:8000:8000

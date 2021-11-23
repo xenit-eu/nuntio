@@ -7,9 +7,11 @@ import com.github.dockerjava.core.DockerClientImpl;
 import com.github.dockerjava.httpclient5.ApacheDockerHttpClient;
 import com.github.dockerjava.transport.DockerHttpClient;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.FactoryBean;
 
 @AllArgsConstructor
+@Slf4j
 public class DockerClientFactory implements FactoryBean<DockerClient> {
 
     private DockerProperties config;
@@ -24,6 +26,8 @@ public class DockerClientFactory implements FactoryBean<DockerClient> {
         dockerClientConfigBuilder.withDockerCertPath(config.getDaemon().getCertPath());
 
         DockerClientConfig dockerClientConfig = dockerClientConfigBuilder.build();
+
+        log.info("Creating docker client with config {}", dockerClientConfig);
 
         DockerHttpClient dockerHttpClient = new ApacheDockerHttpClient.Builder()
                 .dockerHost(dockerClientConfig.getDockerHost())
