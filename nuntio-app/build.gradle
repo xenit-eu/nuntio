@@ -1,9 +1,7 @@
-import org.gradle.api.tasks.testing.Test
-
 import java.util.stream.Collectors
 
 plugins {
-    id 'org.springframework.boot' version '2.5.4'
+    id 'org.springframework.boot' version '2.6.1'
     id 'java'
     id 'eu.xenit.docker' version '5.3.0'
     id 'be.vbgn.ci-detect' version '0.5.0'
@@ -39,23 +37,24 @@ dependencies {
 }
 
 createDockerFile {
-    from("docker.io/xenit/openjdk:jdk-11")
+    from("docker.io/library/eclipse-temurin:11-jre")
     smartCopy(bootJar.archiveFile.map({ it.asFile }), "/nuntio.jar")
     dependsOn(bootJar)
-    entryPoint("/docker-entrypoint.sh", "java", '$JAVA_OPTS', "-jar", "/nuntio.jar")
+    entryPoint("java", "-jar", "/nuntio.jar")
     exposePort(8080)
-    instruction("HEALTHCHECK --timeout=3s CMD curl --fail --silent http://localhost:8080/actuator/health || exit 1")
+    instruction("HEALTHCHECK --timeout=3s CMD curl --fail --silent http://localhost:8080/actuator/health/liveness || exit 1")
 }
 
 dockerBuild {
     repositories = ["hub.xenit.eu/public/nuntio", "docker.io/xenit/nuntio"]
-    tags = ["latest"]
+    tags = ["latest", "${project.version}"]
 }
 
 
 test {
     useJUnitPlatform()
     dependsOn(tasks.buildDockerImage)
+    systemProperty("nuntio.image", "docker.io/xenit/nuntio:latest")
     if(!ci.isCi()) {
         systemProperty("dind.root", project.layout.buildDirectory.dir("dind-temp").forUseAtConfigurationTime().map(dir -> dir.asFile.absolutePath).get())
     }

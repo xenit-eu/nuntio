@@ -14,7 +14,7 @@ public class NuntioContainer extends GenericContainer<NuntioContainer> implement
     private ConsulContainer consulContainer;
 
     public NuntioContainer() {
-        super("hub.xenit.eu/public/nuntio:latest");
+        super(System.getProperty("nuntio.image"));
         setStartupCheckStrategy(new HealthcheckPassingStartupCheckStrategy());
         withCreateContainerCmdModifier(createContainerCmd -> {
             HealthCheck healthCheck = new HealthCheck();

@@ -34,7 +34,7 @@ public class DindContainer extends GenericContainer<DindContainer> {
         });
         setStartupCheckStrategy(new HealthcheckPassingStartupCheckStrategy());
         if(System.getProperty("dind.root") != null) {
-            withFileSystemBind(System.getProperty("dind.root"), "/var/lib/docker", BindMode.READ_WRITE);
+            withFileSystemBind(System.getProperty("dind.root"), "/var/lib/docker/image", BindMode.READ_WRITE);
         }
     }
 
