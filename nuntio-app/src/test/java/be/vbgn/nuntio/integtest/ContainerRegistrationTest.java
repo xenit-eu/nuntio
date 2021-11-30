@@ -32,42 +32,13 @@ import com.github.dockerjava.api.model.Ports.Binding;
 import java.util.Collections;
 import lombok.SneakyThrows;
 import org.hamcrest.Matcher;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Nested;
 import org.testcontainers.containers.Network;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
-public class ContainerRegistrationTest {
-    @Container
-    private static Network network = Network.newNetwork();
-
-    @Container
-    private DindContainer dindContainer = new DindContainer()
-            .withNetwork(network);
-
-    @Container
-    private ConsulContainer consulContainer = new ConsulContainer()
-            .withNetwork(network);
-
-    @SneakyThrows
-    private CreateContainerResponse createContainer( SimpleContainerModifier containerModifier) {
-        dindContainer.getDindClient().pullImageCmd("library/alpine")
-                .withRegistry("docker.io")
-                .withTag("latest")
-                .start()
-                .awaitCompletion();
-
-        var cmd = dindContainer.getDindClient().createContainerCmd("alpine")
-                .withCmd("sleep", "infinity");
-        containerModifier.apply(cmd);
-        return cmd.exec();
-    }
-
-    private ConsulWaiter consulWaiter() {
-        return new ConsulWaiter(consulContainer.getConsulClient());
-    }
+public class ContainerRegistrationTest extends ContainerBaseTest {
 
     @ContainerTests
     @Nested
@@ -359,6 +330,5 @@ public class ContainerRegistrationTest {
             assertThat(services, not(hasKey("low-rider")));
         }
     }
-
 
 }

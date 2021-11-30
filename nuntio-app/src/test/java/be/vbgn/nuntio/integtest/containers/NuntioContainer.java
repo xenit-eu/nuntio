@@ -71,4 +71,12 @@ public class NuntioContainer extends GenericContainer<NuntioContainer> implement
     public boolean isRegistratorExplicitOnly() {
         return getEnvMap().getOrDefault("NUNTIO_DOCKER_REGISTRATORCOMPAT_EXPLICIT", "").equals(Boolean.TRUE.toString());
     }
+
+    public NuntioContainer withLive(boolean enabled) {
+        return withEnv("NUNTIO_ENGINE_LIVE_ENABLED", Boolean.toString(enabled));
+    }
+
+    public NuntioContainer withAntiEntropy(boolean enabled) {
+        return withEnv("NUNTIO_ENGINE_ANTIENTROPY_ENABLED", Boolean.toString(enabled));
+    }
 }
