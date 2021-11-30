@@ -23,21 +23,13 @@ public class EngineConfiguration {
     }
 
     @Bean
-    @ConditionalOnProperty(value = "nuntio.engine.anti-entropy.enabled", matchIfMissing = true)
     AntiEntropyDaemon antiEntropyDaemon(ServicePlatform servicePlatform, ServiceRegistry serviceRegistry, DiffResolver diffResolver, MeterRegistry meterRegistry, EngineProperties engineProperties) {
         AntiEntropyProperties antiEntropyProperties = engineProperties.getAntiEntropy();
-        if (!antiEntropyProperties.isEnabled()) {
-            return null;
-        }
         return new AntiEntropyDaemon(servicePlatform, serviceRegistry, diffResolver, new OperationMetrics(meterRegistry, "anti-entropy"), antiEntropyProperties);
     }
 
     @Bean
-    @ConditionalOnProperty(value = "nuntio.engine.live.enabled", matchIfMissing = true)
     LiveWatchDaemon liveWatchDaemon(ServicePlatform servicePlatform, ServiceRegistry serviceRegistry, DiffResolver diffResolver, MeterRegistry meterRegistry, EngineProperties engineProperties) {
-        if (!engineProperties.getLive().isEnabled()) {
-            return null;
-        }
         return new LiveWatchDaemon(servicePlatform, serviceRegistry, diffResolver, new LiveWatchMetrics(meterRegistry), engineProperties.getLive());
     }
 

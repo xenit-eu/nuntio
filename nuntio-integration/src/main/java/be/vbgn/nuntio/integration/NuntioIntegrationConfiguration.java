@@ -42,16 +42,13 @@ public class NuntioIntegrationConfiguration {
     }
 
     @Bean
-    @ConditionalOnBean(LiveWatchDaemon.class)
     @ConditionalOnMissingBean(NuntioApplicationStartup.class)
-    LiveWatchManager liveWatchManager(LiveWatchDaemon liveWatchDaemon) {
-        return new LiveWatchManagerImpl(liveWatchDaemon);
-    }
-
-    @Bean
-    @ConditionalOnMissingBean(LiveWatchManager.class)
-    LiveWatchManager nullLiveWatchManager() {
-        return new NullLiveWatchManager();
+    LiveWatchManager liveWatchManager(LiveWatchDaemon liveWatchDaemon, EngineProperties engineProperties) {
+        if(engineProperties.getLive().isEnabled()) {
+            return new LiveWatchManagerImpl(liveWatchDaemon);
+        } else {
+            return new NullLiveWatchManager();
+        }
     }
 
     @Bean

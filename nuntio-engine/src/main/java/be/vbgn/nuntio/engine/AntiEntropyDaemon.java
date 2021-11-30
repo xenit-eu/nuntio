@@ -29,7 +29,7 @@ public class AntiEntropyDaemon implements SchedulingConfigurer {
     private AntiEntropyProperties antiEntropyProperties;
 
     public void runAntiEntropy() {
-        if(!antiEntropyProperties.isEnabled()) {
+        if(!antiEntropyProperties.isEnabled())  {
             return;
         }
         try {

@@ -31,6 +31,9 @@ public class LiveWatchDaemon implements Runnable {
     @Override
     public void run() {
         while (true) {
+            if(!liveWatchProperties.isEnabled()) {
+                return;
+            }
             try {
                 if (liveWatchProperties.isBlocking()) {
                     log.info("Starting livewatch in blocking mode");
