@@ -1,5 +1,7 @@
 import org.gradle.api.tasks.testing.Test
 
+import java.util.stream.Collectors
+
 plugins {
     id 'org.springframework.boot' version '2.5.4'
     id 'java'
@@ -58,4 +60,10 @@ test {
         systemProperty("dind.root", project.layout.buildDirectory.dir("dind-temp").forUseAtConfigurationTime().map(dir -> dir.asFile.absolutePath).get())
     }
 }
+
+test.shouldRunAfter(
+        ['api', 'engine', 'integration', 'platform-docker', 'platform-fake', 'registry-consul', 'registry-fake'].stream()
+        .map({ ':nuntio-'+it + ':check'})
+        .collect(Collectors.toList())
+)
 
