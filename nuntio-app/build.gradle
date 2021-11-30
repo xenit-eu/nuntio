@@ -54,6 +54,8 @@ dockerBuild {
 test {
     useJUnitPlatform()
     dependsOn(tasks.buildDockerImage)
-    systemProperty("dind.root", project.layout.buildDirectory.dir("dind-temp").forUseAtConfigurationTime().map(dir -> dir.asFile.absolutePath).get())
+    if(!ci.isCi()) {
+        systemProperty("dind.root", project.layout.buildDirectory.dir("dind-temp").forUseAtConfigurationTime().map(dir -> dir.asFile.absolutePath).get())
+    }
 }
 
