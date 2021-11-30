@@ -9,7 +9,6 @@ public class DockerProperties {
     private boolean enabled = false;
 
     private DaemonProperties daemon = new DaemonProperties();
-    private WatchProperties watch = new WatchProperties();
 
     private PortBindConfiguration bind = PortBindConfiguration.PUBLISHED;
     private NuntioLabelProperties nuntioLabel =new NuntioLabelProperties();
@@ -24,15 +23,8 @@ public class DockerProperties {
     public static class DaemonProperties {
 
         private String host;
-        private boolean tlsVerify;
+        private boolean tlsVerify = false;
         private String certPath;
-    }
-
-    @Data
-    private class WatchProperties {
-
-        private Duration rate;
-
     }
 
     @Data

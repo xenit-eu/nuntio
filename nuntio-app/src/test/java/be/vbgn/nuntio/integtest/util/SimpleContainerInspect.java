@@ -4,12 +4,20 @@ import com.github.dockerjava.api.command.InspectContainerResponse;
 import com.github.dockerjava.api.model.ExposedPort;
 import com.github.dockerjava.api.model.Ports.Binding;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
 
 public class SimpleContainerInspect {
     private final InspectContainerResponse inspectContainerResponse;
 
     public SimpleContainerInspect(InspectContainerResponse inspectContainerResponse) {
         this.inspectContainerResponse = inspectContainerResponse;
+    }
+
+    public Map<String, String> findInternalIps() {
+        return inspectContainerResponse.getNetworkSettings().getNetworks().entrySet()
+                .stream()
+                .collect(Collectors.toMap(Entry::getKey, e -> e.getValue().getIpAddress()));
     }
 
     public Map<ExposedPort, Binding[]> getContainerBindings() {

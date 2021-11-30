@@ -369,11 +369,35 @@ class RegistratorCompatibleParserTest {
                     .imageName("progrium/redis")
                     .internalPortBinding(ServiceBinding.fromPort(8080))
                     .internalPortBinding(ServiceBinding.fromPort(8081))
-                    .environment("SERVICE_IGNORE", "")
+                    .environment("SERVICE_IGNORE", "true")
                     .build();
 
             var services = configurationParser.toServiceConfigurations(redis);
             assertEquals(Collections.emptySet(), services);
+        }
+
+        @Test
+        void globalIgnoreEmpty() {
+            var redis = SimpleContainerMetadata.builder()
+                    .imageName("progrium/redis")
+                    .internalPortBinding(ServiceBinding.fromPort(8080))
+                    .internalPortBinding(ServiceBinding.fromPort(8081))
+                    .environment("SERVICE_IGNORE", "")
+                    .build();
+
+            var services = configurationParser.toServiceConfigurations(redis);
+            assertEquals(Set.of(
+                    PlatformServiceConfiguration.builder()
+                            .serviceName("redis-8080")
+                            .serviceBinding(ServiceBinding.fromPort(8080))
+                            .serviceMetadata("ignore", "")
+                            .build(),
+                    PlatformServiceConfiguration.builder()
+                            .serviceName("redis-8081")
+                            .serviceBinding(ServiceBinding.fromPort(8081))
+                            .serviceMetadata("ignore", "")
+                            .build()
+                    ), services);
         }
 
         @Test
@@ -382,7 +406,7 @@ class RegistratorCompatibleParserTest {
                     .imageName("progrium/redis")
                     .internalPortBinding(ServiceBinding.fromPort(8080))
                     .internalPortBinding(ServiceBinding.fromPort(8081))
-                    .environment("SERVICE_8080_IGNORE", "")
+                    .environment("SERVICE_8080_IGNORE", "1")
                     .build();
 
             var services = configurationParser.toServiceConfigurations(redis);
@@ -401,7 +425,7 @@ class RegistratorCompatibleParserTest {
                     .imageName("progrium/redis")
                     .internalPortBinding(ServiceBinding.fromPort(8080))
                     .internalPortBinding(ServiceBinding.fromPort(8081))
-                    .environment("SERVICE_IGNORE", "")
+                    .environment("SERVICE_IGNORE", "1")
                     .environment("SERVICE_8081_NAME", "xyz")
                     .build();
 

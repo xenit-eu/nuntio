@@ -4,7 +4,6 @@ plugins {
     id 'org.springframework.boot' version '2.5.4'
     id 'java'
     id 'eu.xenit.docker' version '5.3.0'
-    id 'eu.xenit.docker-compose' version '5.3.0'
     id 'be.vbgn.ci-detect' version '0.5.0'
 }
 
@@ -23,6 +22,11 @@ dependencies {
     implementation 'io.micrometer:micrometer-registry-prometheus'
 
 
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.20'
+    testCompileOnly 'org.projectlombok:lombok:1.18.20'
+
+    testImplementation platform('org.testcontainers:testcontainers-bom:1.16.0')
+    testImplementation 'org.testcontainers:junit-jupiter'
     testImplementation platform('org.junit:junit-bom:5.8.1')
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testImplementation 'com.ecwid.consul:consul-api:1.4.5'
@@ -41,39 +45,15 @@ createDockerFile {
     instruction("HEALTHCHECK --timeout=3s CMD curl --fail --silent http://localhost:8080/actuator/health || exit 1")
 }
 
-
-tasks.register('testRegistrator', Test).configure {
-    testClassesDirs = tasks.test.testClassesDirs
-    classpath = tasks.test.classpath
-    useJUnitPlatform({
-        includeTags("registrator-compat")
-    })
-}
-check.dependsOn("testRegistrator")
-
-dockerCompose {
-    useComposeFiles = [
-            'src/test/resources/docker-compose.yml',
-            'src/test/resources/docker-compose.nuntio.yml'
-    ] + (ci.isCi()?[]: [
-            'src/test/resources/docker-compose-debug.yml'
-    ])
-
-    isRequiredBy(test)
-
-    registrator {
-        useComposeFiles =  ['src/test/resources/docker-compose.yml', 'src/test/resources/docker-compose.registrator.yml']
-        isRequiredBy(tasks.named('testRegistrator'))
-    }
+dockerBuild {
+    repositories = ["hub.xenit.eu/public/nuntio", "docker.io/xenit/nuntio"]
+    tags = ["latest"]
 }
 
 
-test.doFirst {
+test {
     useJUnitPlatform()
+    dependsOn(tasks.buildDockerImage)
+    systemProperty("dind.root", project.layout.buildDirectory.dir("dind-temp").forUseAtConfigurationTime().map(dir -> dir.asFile.absolutePath).get())
 }
 
-
-// Only run compose down if on CI or the test task did not fail
-// This keeps the containers up for local inspection in case some test failed
-composeDown.onlyIf { ci.isCi() || test.state.failure == null }
-registratorComposeDown.onlyIf { ci.isCi() || testRegistrator.state.failure == null }

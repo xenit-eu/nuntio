@@ -9,6 +9,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Predicate;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -35,8 +36,10 @@ public class RegistratorCompatibleParser implements ServiceConfigurationParser {
 
         Set<PlatformServiceConfiguration> platformServiceConfigurations = new HashSet<>();
         for(ServiceBinding serviceBinding: containerMetadata.getInternalPortBindings()) {
-            // If SERVICE_<port>_IGNORE or SERVICE_IGNORE is present, disregard this service
-            boolean isIgnore = findValueWithFallback(ConfigKind.IGNORE, serviceBinding, configuration).isPresent();
+            // If SERVICE_<port>_IGNORE or SERVICE_IGNORE is present and not empty, disregard this service
+            boolean isIgnore = findValueWithFallback(ConfigKind.IGNORE, serviceBinding, configuration)
+                    .filter(Predicate.not(String::isEmpty))
+                    .isPresent();
             if(isIgnore) {
                 log.debug("Service binding {} is ignored", serviceBinding);
                 continue;
