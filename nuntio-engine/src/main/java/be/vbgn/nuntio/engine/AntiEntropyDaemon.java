@@ -29,9 +29,6 @@ public class AntiEntropyDaemon implements SchedulingConfigurer {
     private AntiEntropyProperties antiEntropyProperties;
 
     public void runAntiEntropy() {
-        if(!antiEntropyProperties.isEnabled())  {
-            return;
-        }
         try {
             log.debug("Running anti-entropy");
 
@@ -61,6 +58,11 @@ public class AntiEntropyDaemon implements SchedulingConfigurer {
         Duration delay = antiEntropyProperties.getDelay();
         PeriodicTrigger trigger = new PeriodicTrigger(delay.toMillis());
         trigger.setInitialDelay(delay.toMillis());
-        taskRegistrar.addTriggerTask(this::runAntiEntropy, trigger);
+        taskRegistrar.addTriggerTask(() -> {
+            if(!antiEntropyProperties.isEnabled())  {
+                return;
+            }
+            runAntiEntropy();
+        }, trigger);
     }
 }
