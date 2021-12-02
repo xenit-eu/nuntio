@@ -11,6 +11,8 @@ public class EngineProperties {
     AntiEntropyProperties antiEntropy = new AntiEntropyProperties();
     CheckProperties checks = new CheckProperties();
 
+    ShutdownMode shutdownMode = ShutdownMode.UNREGISTER_CHECKS;
+
     @Data
     public static class LiveWatchProperties {
 
@@ -31,5 +33,12 @@ public class EngineProperties {
 
         boolean heartbeat = true;
         boolean healthcheck = true;
+    }
+
+    public static enum ShutdownMode {
+        UNREGISTER_SERVICES,
+        UNREGISTER_HEARTBEAT,
+        UNREGISTER_CHECKS,
+        NO_UNREGISTER
     }
 }

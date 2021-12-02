@@ -4,7 +4,7 @@ import be.vbgn.nuntio.api.registry.ServiceRegistry;
 import be.vbgn.nuntio.engine.EngineProperties;
 import be.vbgn.nuntio.engine.LiveWatchDaemon;
 import be.vbgn.nuntio.engine.PlatformServicesSynchronizer;
-import be.vbgn.nuntio.integration.actuators.ShutdownEndpoint;
+import be.vbgn.nuntio.integration.actuators.SetShutdownEndpoint;
 import be.vbgn.nuntio.integration.startup.NuntioApplicationNormalStartup;
 import be.vbgn.nuntio.integration.startup.NuntioApplicationStartup;
 import be.vbgn.nuntio.integration.startup.NuntioUnregisterAllStartup;
@@ -52,7 +52,7 @@ public class NuntioIntegrationConfiguration {
     }
 
     @Bean
-    ShutdownEndpoint shutdownEndpoint(ServiceRegistry serviceRegistry, EngineProperties engineProperties, LiveWatchManager liveWatchManager, @Autowired(required = false) NuntioApplicationShutdown nuntioApplicationShutdown) {
-        return new ShutdownEndpoint(serviceRegistry, engineProperties, liveWatchManager, nuntioApplicationShutdown);
+    SetShutdownEndpoint setShutdownEndpoint(EngineProperties engineProperties) {
+        return new SetShutdownEndpoint(engineProperties);
     }
 }
