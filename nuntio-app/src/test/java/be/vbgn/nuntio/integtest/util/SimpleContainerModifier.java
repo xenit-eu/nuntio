@@ -3,6 +3,7 @@ package be.vbgn.nuntio.integtest.util;
 import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.github.dockerjava.api.model.ExposedPort;
 import com.github.dockerjava.api.model.HostConfig;
+import com.github.dockerjava.api.model.Mount;
 import com.github.dockerjava.api.model.Ports;
 import com.github.dockerjava.api.model.Ports.Binding;
 import java.util.ArrayList;
@@ -12,10 +13,17 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Consumer;
 
 @FunctionalInterface
-public interface SimpleContainerModifier {
+public interface SimpleContainerModifier extends Consumer<CreateContainerCmd> {
+
     void apply(CreateContainerCmd createContainerCmd);
+
+    @Override
+    default void accept(CreateContainerCmd createContainerCmd) {
+        apply(createContainerCmd);
+    }
 
     default SimpleContainerModifier andThen(SimpleContainerModifier after) {
         Objects.requireNonNull(after);
@@ -60,6 +68,15 @@ public interface SimpleContainerModifier {
             newLabels.put(key, value);
             createContainerCmd.withLabels(newLabels);
         };
+    }
+
+    static SimpleContainerModifier withMount(Mount mount) {
+        return AddHostConfig.INSTANCE.andThen(createContainerCmd -> {
+            if(createContainerCmd.getHostConfig().getMounts() == null) {
+                createContainerCmd.getHostConfig().withMounts(new ArrayList<>());
+            }
+            createContainerCmd.getHostConfig().getMounts().add(mount);
+        });
     }
 }
 

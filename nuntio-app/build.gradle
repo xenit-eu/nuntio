@@ -55,9 +55,6 @@ test {
     useJUnitPlatform()
     dependsOn(tasks.buildDockerImage)
     systemProperty("nuntio.image", "docker.io/xenit/nuntio:latest")
-    if(!ci.isCi()) {
-        systemProperty("dind.root", project.layout.buildDirectory.dir("dind-temp").forUseAtConfigurationTime().map(dir -> dir.asFile.absolutePath).get())
-    }
 }
 
 test.shouldRunAfter(
