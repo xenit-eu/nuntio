@@ -13,7 +13,6 @@ import be.vbgn.nuntio.integration.startup.NuntioUnregisterAllStartup;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -38,9 +37,8 @@ public class NuntioIntegrationConfiguration {
 
     @Bean
     @ConditionalOnMissingBean(NuntioApplicationStartup.class)
-    NuntioApplicationNormalStartup normalStartup(PlatformServicesSynchronizer servicesRegistrar,
-            ApplicationContext applicationContext) {
-        return new NuntioApplicationNormalStartup(servicesRegistrar, applicationContext);
+    NuntioApplicationNormalStartup normalStartup(PlatformServicesSynchronizer servicesRegistrar) {
+        return new NuntioApplicationNormalStartup(servicesRegistrar);
     }
 
     @Bean

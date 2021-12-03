@@ -1,40 +1,44 @@
 package be.vbgn.nuntio.integration.startup;
 
-import be.vbgn.nuntio.engine.AntiEntropyDaemon;
-import be.vbgn.nuntio.engine.LiveWatchDaemon;
 import be.vbgn.nuntio.engine.PlatformServicesSynchronizer;
+import io.github.resilience4j.core.IntervalFunction;
+import io.github.resilience4j.retry.Retry;
+import io.github.resilience4j.retry.RetryConfig;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.DisposableBean;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
-import org.springframework.context.ApplicationContext;
-import org.springframework.lang.Nullable;
 
 @Slf4j
+@AllArgsConstructor
 public class NuntioApplicationNormalStartup implements ApplicationRunner {
 
     private PlatformServicesSynchronizer platformServicesRegistrar;
-    private ApplicationContext applicationContext;
-
-    public NuntioApplicationNormalStartup(PlatformServicesSynchronizer platformServicesRegistrar,
-            ApplicationContext applicationContext) {
-        this.platformServicesRegistrar = platformServicesRegistrar;
-        this.applicationContext = applicationContext;
-    }
+    private final Retry retry = Retry.of("startup-sync", () -> {
+        return RetryConfig.custom()
+                .maxAttempts(10)
+                .intervalFunction(IntervalFunction.ofExponentialRandomBackoff())
+                .retryOnResult(Boolean.FALSE::equals)
+                .failAfterMaxAttempts(false)
+                .build();
+    });
 
     @Override
     public void run(ApplicationArguments args) {
-        log.info("Running existing services registration at application startup");
-        try {
-            platformServicesRegistrar.syncServices();
-        } catch (Exception e) {
-            if (applicationContext.getBeanNamesForType(AntiEntropyDaemon.class, true, false).length > 0) {
-                log.error(
-                        "Failed to register services at startup. Continuing as registration will be retried during anti-entropy scanning.",
-                        e);
-            } else {
-                throw e;
+        while(true) {
+            boolean result = retry.executeSupplier(() -> {
+                try {
+                    log.info("Running existing services registration at application startup");
+                    platformServicesRegistrar.syncServices();
+                    log.info("Existing services have been registered.");
+                    return true;
+                } catch (Exception e) {
+                    log.error("Failed to register services at startup. Waiting for registration to complete before continuing.", e);
+                    return false;
+                }
+            });
+            if(result) {
+                return;
             }
         }
     }
