@@ -7,6 +7,7 @@ import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.extension.AfterTestExecutionCallback;
 import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
 import org.junit.jupiter.api.extension.Extension;
@@ -20,6 +21,7 @@ import org.junit.platform.commons.util.AnnotationUtils;
 import org.junit.platform.commons.util.ReflectionUtils;
 import org.junit.platform.commons.util.ReflectionUtils.HierarchyTraversalMode;
 
+@Slf4j
 public class RegistrationCompatInvocationContextProvider implements TestTemplateInvocationContextProvider {
 
     @Override
@@ -44,7 +46,7 @@ public class RegistrationCompatInvocationContextProvider implements TestTemplate
         return new TestTemplateInvocationContext() {
             @Override
             public String getDisplayName(int invocationIndex) {
-                return field.getType().getSimpleName() + "["+field.getName()+"]";
+                return field.getName();
             }
 
             @Override
@@ -76,6 +78,11 @@ public class RegistrationCompatInvocationContextProvider implements TestTemplate
                     @Override
                     public void afterTestExecution(ExtensionContext context) throws Exception {
                         var registrationContainer = (RegistrationContainer) field.get(context.getRequiredTestInstance());
+
+                        if(context.getExecutionException().isPresent()) {
+                            log.info("Logs for {}:\n{}", field.getName(), registrationContainer.getLogs());
+                        }
+
                         registrationContainer.stop();
                     }
                 });

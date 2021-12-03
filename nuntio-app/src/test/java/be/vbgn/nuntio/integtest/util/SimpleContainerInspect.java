@@ -1,5 +1,6 @@
 package be.vbgn.nuntio.integtest.util;
 
+import com.github.dockerjava.api.command.InspectContainerCmd;
 import com.github.dockerjava.api.command.InspectContainerResponse;
 import com.github.dockerjava.api.model.ExposedPort;
 import com.github.dockerjava.api.model.Ports.Binding;
@@ -9,6 +10,10 @@ import java.util.stream.Collectors;
 
 public class SimpleContainerInspect {
     private final InspectContainerResponse inspectContainerResponse;
+
+    public SimpleContainerInspect(InspectContainerCmd inspectContainerCmd) {
+        this(inspectContainerCmd.exec());
+    }
 
     public SimpleContainerInspect(InspectContainerResponse inspectContainerResponse) {
         this.inspectContainerResponse = inspectContainerResponse;
@@ -43,6 +48,11 @@ public class SimpleContainerInspect {
             default:
                 throw new IllegalStateException("Multiple bindings found for container "+inspectContainerResponse.getId()+" and port "+exposedPort);
         }
+    }
+
+    public Integer findSingleContainerPort(ExposedPort exposedPort) {
+        var binding = findSingleContainerBinding(exposedPort);
+        return Integer.parseInt(binding.getHostPortSpec());
     }
 
 }

@@ -88,6 +88,12 @@ public class DindContainer extends GenericContainer<DindContainer> {
         ));
     }
 
+    @Override
+    public InspectContainerResponse getContainerInfo() {
+        // Always inspect so our data is up-to-date after restarting the container outside of testcontainers control
+        return getDockerClient().inspectContainerCmd(getContainerId()).exec();
+    }
+
     public DockerClient getDindClient() {
         DockerClientConfig clientConfig = DefaultDockerClientConfig.createDefaultConfigBuilder()
                 .withDockerHost("tcp://"+getHost()+":"+getMappedPort(getDaemonPort()))

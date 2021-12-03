@@ -6,6 +6,7 @@ import com.github.dockerjava.api.model.HostConfig;
 import com.github.dockerjava.api.model.Mount;
 import com.github.dockerjava.api.model.Ports;
 import com.github.dockerjava.api.model.Ports.Binding;
+import com.github.dockerjava.api.model.RestartPolicy;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -51,7 +52,14 @@ public interface SimpleContainerModifier extends Consumer<CreateContainerCmd> {
         if(items == null) {
             return Collections.singletonList(item);
         }
-        var itemsList = new ArrayList<>(Arrays.asList(items));
+        return appendItem(Arrays.asList(items), item);
+    }
+
+    private static <T> List<T> appendItem(List<T> items, T item) {
+        if(items == null) {
+            return Collections.singletonList(item);
+        }
+        var itemsList = new ArrayList<>(items);
         itemsList.add(item);
         return itemsList;
     }
@@ -72,10 +80,13 @@ public interface SimpleContainerModifier extends Consumer<CreateContainerCmd> {
 
     static SimpleContainerModifier withMount(Mount mount) {
         return AddHostConfig.INSTANCE.andThen(createContainerCmd -> {
-            if(createContainerCmd.getHostConfig().getMounts() == null) {
-                createContainerCmd.getHostConfig().withMounts(new ArrayList<>());
-            }
-            createContainerCmd.getHostConfig().getMounts().add(mount);
+            createContainerCmd.getHostConfig().withMounts(appendItem(createContainerCmd.getHostConfig().getMounts(), mount));
+        });
+    }
+
+    static SimpleContainerModifier withRestartPolicy(RestartPolicy restartPolicy) {
+        return AddHostConfig.INSTANCE.andThen(createContainerCmd -> {
+            createContainerCmd.getHostConfig().withRestartPolicy(restartPolicy);
         });
     }
 }
