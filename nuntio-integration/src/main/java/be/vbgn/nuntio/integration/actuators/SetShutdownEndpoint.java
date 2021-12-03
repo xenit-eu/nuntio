@@ -10,7 +10,7 @@ import org.springframework.boot.actuate.endpoint.annotation.Endpoint;
 import org.springframework.boot.actuate.endpoint.annotation.WriteOperation;
 
 @Endpoint(
-    id = "set-shutdown"
+    id = "setShutdown"
 )
 @AllArgsConstructor
 @Slf4j
