@@ -4,15 +4,17 @@ import be.vbgn.nuntio.api.registry.ServiceRegistry;
 import be.vbgn.nuntio.engine.EngineProperties;
 import be.vbgn.nuntio.engine.LiveWatchDaemon;
 import be.vbgn.nuntio.engine.PlatformServicesSynchronizer;
+import be.vbgn.nuntio.engine.availability.AvailabilityManager;
 import be.vbgn.nuntio.integration.actuators.SetShutdownEndpoint;
+import be.vbgn.nuntio.integration.availability.AvailabilityManagerImpl;
 import be.vbgn.nuntio.integration.startup.NuntioApplicationNormalStartup;
 import be.vbgn.nuntio.integration.startup.NuntioApplicationStartup;
 import be.vbgn.nuntio.integration.startup.NuntioUnregisterAllStartup;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -54,5 +56,10 @@ public class NuntioIntegrationConfiguration {
     @Bean
     SetShutdownEndpoint setShutdownEndpoint(EngineProperties engineProperties) {
         return new SetShutdownEndpoint(engineProperties);
+    }
+
+    @Bean
+    AvailabilityManager availabilityManager(ApplicationEventPublisher eventPublisher) {
+        return new AvailabilityManagerImpl(eventPublisher);
     }
 }

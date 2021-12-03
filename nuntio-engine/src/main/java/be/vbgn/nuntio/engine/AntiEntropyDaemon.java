@@ -5,6 +5,7 @@ import be.vbgn.nuntio.api.platform.ServicePlatform;
 import be.vbgn.nuntio.api.registry.RegistryServiceIdentifier;
 import be.vbgn.nuntio.api.registry.ServiceRegistry;
 import be.vbgn.nuntio.engine.EngineProperties.AntiEntropyProperties;
+import be.vbgn.nuntio.engine.availability.AvailabilityManager;
 import be.vbgn.nuntio.engine.diff.AddService;
 import be.vbgn.nuntio.engine.diff.DiffResolver;
 import be.vbgn.nuntio.engine.diff.DiffUtil;
@@ -27,6 +28,7 @@ public class AntiEntropyDaemon implements SchedulingConfigurer {
     private DiffResolver diffResolver;
     private OperationMetrics antiEntropyMetrics;
     private AntiEntropyProperties antiEntropyProperties;
+    private AvailabilityManager availabilityManager;
 
     public void runAntiEntropy() {
         try {
@@ -47,9 +49,11 @@ public class AntiEntropyDaemon implements SchedulingConfigurer {
                         });
                     })
                     .forEach(diffResolver);
+            availabilityManager.registerSuccess(this);
         } catch (Throwable e) {
             log.error("Exception during anti-entropy run", e);
             antiEntropyMetrics.failure();
+            availabilityManager.registerFailure(this);
         }
     }
 

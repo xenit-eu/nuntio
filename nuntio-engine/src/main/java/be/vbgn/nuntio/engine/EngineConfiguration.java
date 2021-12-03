@@ -3,6 +3,7 @@ package be.vbgn.nuntio.engine;
 import be.vbgn.nuntio.api.platform.ServicePlatform;
 import be.vbgn.nuntio.api.registry.ServiceRegistry;
 import be.vbgn.nuntio.engine.EngineProperties.AntiEntropyProperties;
+import be.vbgn.nuntio.engine.availability.AvailabilityManager;
 import be.vbgn.nuntio.engine.diff.DiffResolver;
 import be.vbgn.nuntio.engine.diff.InitialRegistrationResolver;
 import be.vbgn.nuntio.engine.metrics.LiveWatchMetrics;
@@ -23,14 +24,14 @@ public class EngineConfiguration {
     }
 
     @Bean
-    AntiEntropyDaemon antiEntropyDaemon(ServicePlatform servicePlatform, ServiceRegistry serviceRegistry, DiffResolver diffResolver, MeterRegistry meterRegistry, EngineProperties engineProperties) {
+    AntiEntropyDaemon antiEntropyDaemon(ServicePlatform servicePlatform, ServiceRegistry serviceRegistry, DiffResolver diffResolver, MeterRegistry meterRegistry, EngineProperties engineProperties, AvailabilityManager availabilityManager) {
         AntiEntropyProperties antiEntropyProperties = engineProperties.getAntiEntropy();
-        return new AntiEntropyDaemon(servicePlatform, serviceRegistry, diffResolver, new OperationMetrics(meterRegistry, "anti-entropy"), antiEntropyProperties);
+        return new AntiEntropyDaemon(servicePlatform, serviceRegistry, diffResolver, new OperationMetrics(meterRegistry, "anti-entropy"), antiEntropyProperties, availabilityManager);
     }
 
     @Bean
-    LiveWatchDaemon liveWatchDaemon(ServicePlatform servicePlatform, ServiceRegistry serviceRegistry, DiffResolver diffResolver, MeterRegistry meterRegistry, EngineProperties engineProperties) {
-        return new LiveWatchDaemon(servicePlatform, serviceRegistry, diffResolver, new LiveWatchMetrics(meterRegistry), engineProperties.getLive());
+    LiveWatchDaemon liveWatchDaemon(ServicePlatform servicePlatform, ServiceRegistry serviceRegistry, DiffResolver diffResolver, MeterRegistry meterRegistry, EngineProperties engineProperties, AvailabilityManager availabilityManager) {
+        return new LiveWatchDaemon(servicePlatform, serviceRegistry, diffResolver, new LiveWatchMetrics(meterRegistry), engineProperties.getLive(), availabilityManager);
     }
 
     @Bean

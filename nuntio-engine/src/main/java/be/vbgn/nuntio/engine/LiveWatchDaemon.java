@@ -4,6 +4,7 @@ import be.vbgn.nuntio.api.platform.PlatformServiceEvent;
 import be.vbgn.nuntio.api.platform.ServicePlatform;
 import be.vbgn.nuntio.api.registry.ServiceRegistry;
 import be.vbgn.nuntio.engine.EngineProperties.LiveWatchProperties;
+import be.vbgn.nuntio.engine.availability.AvailabilityManager;
 import be.vbgn.nuntio.engine.diff.AddService;
 import be.vbgn.nuntio.engine.diff.DiffResolver;
 import be.vbgn.nuntio.engine.diff.DiffUtil;
@@ -27,6 +28,7 @@ public class LiveWatchDaemon implements Runnable {
     private DiffResolver diffResolver;
     private LiveWatchMetrics liveWatchMetrics;
     private LiveWatchProperties liveWatchProperties;
+    private AvailabilityManager availabilityManager;
 
     @Override
     public void run() {
@@ -37,7 +39,9 @@ public class LiveWatchDaemon implements Runnable {
             try {
                 if (liveWatchProperties.isBlocking()) {
                     log.info("Starting livewatch in blocking mode");
-                    liveWatchMetrics.blockingTime(() -> platform.eventStream().forEachBlocking(this::handleEvent));
+                    liveWatchMetrics.blockingTime(() -> platform.eventStream().peek(_event -> {
+                        availabilityManager.registerSuccess(this);
+                    }).forEachBlocking(this::handleEvent));
                 } else {
                     log.info("Starting livewatch in polling mode");
                     while(true) {
@@ -51,17 +55,20 @@ public class LiveWatchDaemon implements Runnable {
                         Duration spentTime = Duration.between(startTime, Instant.now());
                         Duration sleepTime = liveWatchProperties.getDelay().minus(spentTime);
                         log.debug("Processed {} events in {}.", processedEvents.get(), spentTime);
+                        availabilityManager.registerSuccess(this);
                         log.trace("Sleeping for {}", sleepTime);
                         Thread.sleep(sleepTime.toMillis());
                         log.trace("Wakeup from sleep.");
                     }
                 }
+                availabilityManager.registerSuccess(this);
             } catch(InterruptedException e) {
                 log.info("Caught interrupt. Shutting down live-watch daemon");
                 return;
             } catch (Throwable e) {
                 log.error("Error during livewatch", e);
                 liveWatchMetrics.failure();
+                availabilityManager.registerFailure(this);
             }
         }
     }
