@@ -9,6 +9,7 @@ import static org.hamcrest.Matchers.not;
 import be.vbgn.nuntio.integtest.containers.NuntioContainer;
 import be.vbgn.nuntio.integtest.jupiter.annotations.CompatTest;
 import be.vbgn.nuntio.integtest.jupiter.annotations.ContainerTests;
+import be.vbgn.nuntio.integtest.jupiter.annotations.NuntioTest;
 import be.vbgn.nuntio.integtest.util.SimpleContainerInspect;
 import be.vbgn.nuntio.integtest.util.SimpleContainerModifier;
 import com.ecwid.consul.v1.ConsulClient;
@@ -36,7 +37,7 @@ public class ContainerRestartTest extends ContainerBaseTest {
             .withAntiEntropy(false);
 
 
-    @CompatTest
+    @NuntioTest
     void testReregistersRestartedContainer(DockerClient dockerClient, ConsulClient consulClient) {
         CreateContainerResponse createContainer = createContainer(
                 SimpleContainerModifier.withLabel("nuntio.vbgn.be/service", "test-service")
@@ -52,7 +53,7 @@ public class ContainerRestartTest extends ContainerBaseTest {
 
         dockerClient.startContainerCmd(createContainer.getId()).exec();
 
-        await().timeout(Duration.ofMinutes(2)).until(consulWaiter().serviceExists("test-service"));
+        await.until(consulWaiter().serviceExists("test-service"));
         var consulService= consulClient.getCatalogService("test-service", CatalogServiceRequest.newBuilder().build()).getValue();
 
         assertThat(consulService, hasSize(1));
@@ -72,16 +73,15 @@ public class ContainerRestartTest extends ContainerBaseTest {
 
         // Wait for a whole cycle of service appearing and disappearing to be sure that our anti-entropy has completed a full run
         dockerClient.startContainerCmd(markerContainer.getId()).exec();
-        await().timeout(Duration.ofMinutes(2)).until(consulWaiter().serviceExists("marker-service"));
+        await.until(consulWaiter().serviceExists("marker-service"));
         dockerClient.stopContainerCmd(markerContainer.getId()).exec();
-        await().timeout(Duration.ofMinutes(2)).until(consulWaiter().serviceDoesNotExist("marker-service"));
+        await.until(consulWaiter().serviceDoesNotExist("marker-service"));
 
         var newConsulService = consulClient.getCatalogService("test-service", CatalogServiceRequest.newBuilder().build()).getValue();
 
         assertThat(newConsulService, hasSize(1));
 
         assertThat(newConsulService.get(0).getServicePort(), equalTo(newServicePort));
-
     }
 
 }
