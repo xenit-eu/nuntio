@@ -6,8 +6,11 @@ import be.vbgn.nuntio.integtest.containers.ConsulContainer;
 import be.vbgn.nuntio.integtest.containers.DindContainer;
 import be.vbgn.nuntio.integtest.util.ConsulWaiter;
 import be.vbgn.nuntio.integtest.util.SimpleContainerModifier;
+import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.async.ResultCallback.Adapter;
 import com.github.dockerjava.api.command.CreateContainerResponse;
+import com.github.dockerjava.api.model.ExposedPort;
+import com.github.dockerjava.api.model.Ports.Binding;
 import com.github.dockerjava.api.model.PullResponseItem;
 import java.util.HashSet;
 import java.util.Set;
@@ -71,5 +74,18 @@ public abstract class ContainerBaseTest {
 
     protected ConsulWaiter consulWaiter() {
         return new ConsulWaiter(consulContainer.getConsulClient());
+    }
+
+
+    protected void waitForFullCycle() {
+        CreateContainerResponse markerContainer = createContainer(
+                SimpleContainerModifier.withPortBinding(ExposedPort.tcp(80), Binding.empty())
+                        .andThen(SimpleContainerModifier.withLabel("nuntio.vbgn.be/service", "marker"))
+        );
+        DockerClient dockerClient = dindContainer.getDindClient();
+        dockerClient.startContainerCmd(markerContainer.getId()).exec();
+        await.until(consulWaiter().serviceExists("marker"));
+        dockerClient.stopContainerCmd(markerContainer.getId()).exec();
+        await.until(consulWaiter().serviceDoesNotExist("marker"));
     }
 }

@@ -1,6 +1,5 @@
 package be.vbgn.nuntio.integtest;
 
-import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.anyOf;
@@ -12,15 +11,12 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.startsWith;
 
-import be.vbgn.nuntio.integtest.containers.ConsulContainer;
-import be.vbgn.nuntio.integtest.containers.DindContainer;
 import be.vbgn.nuntio.integtest.containers.NuntioContainer;
 import be.vbgn.nuntio.integtest.containers.RegistrationContainer;
 import be.vbgn.nuntio.integtest.containers.RegistratorContainer;
 import be.vbgn.nuntio.integtest.jupiter.annotations.CompatTest;
 import be.vbgn.nuntio.integtest.jupiter.annotations.ContainerTests;
 import be.vbgn.nuntio.integtest.jupiter.annotations.NuntioTest;
-import be.vbgn.nuntio.integtest.util.ConsulWaiter;
 import be.vbgn.nuntio.integtest.util.SimpleContainerInspect;
 import be.vbgn.nuntio.integtest.util.SimpleContainerModifier;
 import com.ecwid.consul.v1.ConsulClient;
@@ -31,11 +27,7 @@ import com.github.dockerjava.api.command.CreateContainerResponse;
 import com.github.dockerjava.api.model.ExposedPort;
 import com.github.dockerjava.api.model.Ports.Binding;
 import java.util.Collections;
-import lombok.SneakyThrows;
 import org.hamcrest.Matcher;
-import org.junit.jupiter.api.Nested;
-import org.testcontainers.containers.Network;
-import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers

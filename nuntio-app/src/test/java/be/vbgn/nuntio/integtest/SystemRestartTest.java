@@ -77,16 +77,16 @@ public class SystemRestartTest extends ContainerBaseTest {
         dockerClient = dindContainer.getDindClient();
 
         // Schedule an additional container *before* nuntio is restarted
-        CreateContainerResponse markerContainer = createContainer(
+        CreateContainerResponse container3 = createContainer(
                 SimpleContainerModifier.withPortBinding(ExposedPort.tcp(80), Binding.empty())
-                        .andThen(SimpleContainerModifier.withLabel("nuntio.vbgn.be/service", "marker"))
+                        .andThen(SimpleContainerModifier.withLabel("nuntio.vbgn.be/service", "my-service3"))
         );
-        dockerClient.startContainerCmd(markerContainer.getId()).exec();
+        dockerClient.startContainerCmd(container3.getId()).exec();
 
         // Restart nuntio
         registrationContainer.start();
 
-        await.until(consulWaiter().serviceExists("marker"));
+        waitForFullCycle();
 
         var myServices = consulClient.getCatalogService("my-service", CatalogServiceRequest.newBuilder().build()).getValue();
 
@@ -96,6 +96,8 @@ public class SystemRestartTest extends ContainerBaseTest {
 
         assertThat(myServices, hasSize(1));
         assertThat(myServices.get(0).getServicePort(), equalTo(containerInspectAfter.findSingleContainerPort(ExposedPort.tcp(80))));
+
+        assertThat(consulClient.getCatalogServices(CatalogServicesRequest.newBuilder().build()).getValue(), hasKey("my-service3"));
     }
 
 
@@ -132,14 +134,7 @@ public class SystemRestartTest extends ContainerBaseTest {
 
         await.until(consulWaiter().serviceExists("my-service2"));
 
-        CreateContainerResponse markerContainer = createContainer(
-                SimpleContainerModifier.withPortBinding(ExposedPort.tcp(80), Binding.empty())
-                        .andThen(SimpleContainerModifier.withLabel("nuntio.vbgn.be/service", "marker"))
-        );
-        dockerClient.startContainerCmd(markerContainer.getId()).exec();
-        await.until(consulWaiter().serviceExists("marker"));
-        dockerClient.stopContainerCmd(markerContainer.getId()).exec();
-        await.until(consulWaiter().serviceDoesNotExist("marker"));
+        waitForFullCycle();
 
         assertThat(consulContainer.getConsulClient().getCatalogServices(CatalogServicesRequest.newBuilder().build()).getValue(), hasKey("my-service"));
     }
