@@ -1,0 +1,22 @@
+version: '3.1'
+services:
+  nuntio:
+    image: ${DOCKER_IMAGE}
+    ports:
+      - ${DOCKER_IP}::8080
+    environment:
+      NUNTIO_CONSUL_HOST: consul
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  consul:
+    image: docker.io/library/consul:latest
+    command:
+      - agent
+      - -dev
+      - -client=0.0.0.0
+    healthcheck:
+      test:
+        - CMD
+        - consul
+        - info
