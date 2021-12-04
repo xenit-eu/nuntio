@@ -34,25 +34,25 @@ Only global configuration options are documented here.
 </thead>
 <tbody>
 <tr>
-<td>`nuntio.engine.live.enabled`</td><td>`true`</td><td>Enables watching the platform eventstream to immediately react to services changing state.</td>
+<td><code>nuntio.engine.live.enabled</code></td><td><code>true</code></td><td>Enables watching the platform eventstream to immediately react to services changing state.</td>
 </tr>
 <tr>
-<td>`nuntio.engine.live.blocking`</td><td>`true`</td><td>Enables blocking-mode watching of the eventstream. This option can be disabled to fall back to polling-mode operation in case there are problems with waking up blocked threads.</td>
+<td><code>nuntio.engine.live.blocking</code></td><td><code>true</code></td><td>Enables blocking-mode watching of the eventstream. This option can be disabled to fall back to polling-mode operation in case there are problems with waking up blocked threads.</td>
 </tr>
 <tr>
-<td>`nuntio.engine.live.delay`</td><td>`1s`</td><td>Time between checks in polling-mode watching.</td>
+<td><code>nuntio.engine.live.delay</code></td><td><code>1s</code></td><td>Time between checks in polling-mode watching.</td>
 </tr>
 <tr>
-<td>`nuntio.engine.antiEntropy.enabled`</td><td>`true`</td><td>Enables anti-entropy scanning.</td>
+<td><code>nuntio.engine.antiEntropy.enabled</code></td><td><code>true</code></td><td>Enables anti-entropy scanning.</td>
 </tr>
 <tr>
-<td>`nuntio.engine.antiEntropy.delay`</td><td>`1m`</td><td>Time between anti-entropy scans.</td>
+<td><code>nuntio.engine.antiEntropy.delay</code></td><td><code>1m</code></td><td>Time between anti-entropy scans.</td>
 </tr>
 <tr>
-<td>`nuntio.engine.checks.heartbeat`</td><td>`true`</td><td>Enable registration of heartbeat check.</td>
+<td><code>nuntio.engine.checks.heartbeat</code></td><td><code>true</code></td><td>Enable registration of heartbeat check.</td>
 </tr>
 <tr>
-<td>`nuntio.engine.checks.healthcheck`</td><td>`true`</td><td>Enable registration of healthcheck check.</td>
+<td><code>nuntio.engine.checks.healthcheck</code></td><td><code>true</code></td><td>Enable registration of healthcheck check.</td>
 </tr>
 </tbody>
 </table>
@@ -74,42 +74,42 @@ The Docker platform registers services for containers with certain labels (or en
 </thead>
 <tbody>
 <tr>
-<td>`nuntio.docker.enabled`</td><td>`true`</td><td>Enable Docker platform</td>
+<td><code>nuntio.docker.enabled</code></td><td><code>true</code></td><td>Enable Docker platform</td>
 </tr>
 <tr>
-<td>`nuntio.docker.daemon.host`</td><td>Platform-dependent</td><td>Connection string to the docker daemon (e.g.: `unix:///var/run/docker.sock`, `tcp://some-host:2375`)</td>
+<td><code>nuntio.docker.daemon.host</code></td><td>Platform-dependent</td><td>Connection string to the docker daemon (e.g.: <code>unix:///var/run/docker.sock</code>, <code>tcp://some-host:2375</code>)</td>
 </tr>
 <tr>
-<td>`nuntio.docker.daemon.tlsrVerify`</td><td>`false`</td><td>Enable/disable TLS verification (switch between http & https protocols)</td>
+<td><code>nuntio.docker.daemon.tlsVerify</code></td><td><code>false</code></td><td>Enable/disable TLS verification (switch between http & https protocols)</td>
 </tr>
 <tr>
-<td>`nuntio.docker.daemon.certPath`</td><td>`null`</td><td>Path to certificates needed for TLS verification</td>
+<td><code>nuntio.docker.daemon.certPath</code></td><td><code>null</code></td><td>Path to certificates needed for TLS verification</td>
 </tr>
 <tr>
-<td>`nuntio.docker.bind`</td><td>`PUBLISHED`</td><td>Values: `PUBLISHED`/`INTERNAL`.
+<td><code>nuntio.docker.bind</code></td><td><code>PUBLISHED</code></td><td>Values: <code>PUBLISHED</code>/<code>INTERNAL</code>.
 
 Which IP address/port to publish for containers.
 
 * PUBLISHED: Only published ports are used. They are used with the host IP and bound port.
-* INTERNAL: All exposed ports are used. They are used with the internal container IP and exposed port. If there are multiple internal container IPs (when the container is attached to multiple networks), no service will be published. To select a specific (e.g. overlay) network, a network filter can be specified with `nuntio.docker.bind.filter`.
+* INTERNAL: All exposed ports are used. They are used with the internal container IP and exposed port. If there are multiple internal container IPs (when the container is attached to multiple networks), no service will be published. To select a specific (e.g. overlay) network, a network filter can be specified with <code>nuntio.docker.bind.filter</code>.
 
 </td>
 </tr>
 <tr>
-<td>`nuntio.docker.bind.filter`</td><td>``</td><td>Only applicable for `INTERNAL` binds. Docker filters to determine which network(s) to use IP addresses for. Filters are comma-separated and the same format as in `docker network ls`. Only one network may match per-container.</td>
+<td><code>nuntio.docker.bind.filter</code></td><td><code></code></td><td>Only applicable for <code>INTERNAL</code> binds. Docker filters to determine which network(s) to use IP addresses for. Filters are comma-separated and the same format as in <code>docker network ls</code>. Only one network may match per-container.</td>
 </tr>
 
 <tr>
-<td>`nuntio.docker.nuntioLabel.enabled`</td><td>`true`</td><td>Enables configuring services on Docker containers with labels following the [label specification](#docker-labels-for-nuntio)</td>
+<td><code>nuntio.docker.nuntioLabel.enabled</code></td><td><code>true</code></td><td>Enables configuring services on Docker containers with labels following the [label specification](#docker-labels-for-nuntio)</td>
 </tr>
 <tr>
-<td>`nuntio.docker.nuntioLabel.prefix`</td><td>`nuntio.vbgn.be`</td><td>Prefix for Nuntio labels.</td>
+<td><code>nuntio.docker.nuntioLabel.prefix</code></td><td><code>nuntio.vbgn.be</code></td><td>Prefix for Nuntio labels.</td>
 </tr>
 <tr>
-<td>`nuntio.docker.registratorCompat.enabled`</td><td>`false`</td><td>Enable compatibility with some registrator labels/environment variables. See [Registrator compatibility](#registrator-compatibility-mode) for details on which parts are implemented.</td>
+<td><code>nuntio.docker.registratorCompat.enabled</code></td><td><code>false</code></td><td>Enable compatibility with some registrator labels/environment variables. See [Registrator compatibility](#registrator-compatibility-mode) for details on which parts are implemented.</td>
 </tr>
 <tr>
-<td>`nuntio.docker.registratorCompat.explicit`</td><td>`false`</td><td>Enables `-explicit` mode registrator compatibility, only registering containers that have service configurations present.</td>
+<td><code>nuntio.docker.registratorCompat.explicit</code></td><td><code>false</code></td><td>Enables <code>-explicit</code> mode registrator compatibility, only registering containers that have service configurations present.</td>
 </tr>
 
 </tbody>
@@ -228,29 +228,33 @@ The Consul registry supports registering services to Consul.
 </thead>
 <tbody>
 <tr>
-<td>`nuntio.consul.enabled`</td><td>`true`</td><td>Enable Consul registry</td>
+<td><code>nuntio.consul.enabled</code></td><td><code>true</code></td><td>Enable Consul registry</td>
 </tr>
 <tr>
-<td>`nuntio.consul.host`</td><td>`localhost`</td><td>Hostname of the local Consul agent</td>
+<td><code>nuntio.consul.host</code></td><td><code>localhost</code></td><td>Hostname of the local Consul agent</td>
 </tr>
 <tr>
-<td>`nuntio.consul.port`</td><td>`8500`</td><td>Port of the Consul HTTP API</td>
+<td><code>nuntio.consul.port</code></td><td><code>8500</code></td><td>Port of the Consul HTTP API</td>
 </tr>
 <tr>
-<td>`nuntio.consul.token`</td><td>`null`</td><td>ACL token for the Consul HTTP API</td>
+<td><code>nuntio.consul.token</code></td><td><code>null</code></td><td>ACL token for the Consul HTTP API</td>
 </tr>
 <tr>
-<td>`nuntio.consul.checks.[heartbeat|pause|healthcheck].ttl`</td><td>
-* heartbeat: `24h`
-* pause: `5m`
-* healthcheck: `5m`
+<td><code>nuntio.consul.checks.[heartbeat|pause|healthcheck].ttl</code></td><td>
+
+* heartbeat: <code>24h</code>
+* pause: <code>5m</code>
+* healthcheck: <code>5m</code>
+
 </td><td>TTL before a check type expires and is considered critical.</td>
 </tr>
 <tr>
-<td>`nuntio.consul.checks.[heartbeat|pause|healthcheck].deregisterCriticalServiceAfter`</td><td>
-* heartbeat: `72h`
-* pause: `null`
-* healthcheck: `null`
+<td><code>nuntio.consul.checks.[heartbeat|pause|healthcheck].deregisterCriticalServiceAfter</code></td><td>
+
+* heartbeat: <code>72h</code>
+* pause: <code>null</code>
+* healthcheck: <code>null</code>
+
 </td><td>Time before a critical check deregisters the service.</td>
 </tr>
 </tbody>
