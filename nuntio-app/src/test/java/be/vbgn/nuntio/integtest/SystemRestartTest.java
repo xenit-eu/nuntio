@@ -136,6 +136,8 @@ public class SystemRestartTest extends ContainerBaseTest {
 
         waitForFullCycle();
 
+        await.until(consulWaiter().serviceExists("my-service"));
+
         assertThat(consulContainer.getConsulClient().getCatalogServices(CatalogServicesRequest.newBuilder().build()).getValue(), hasKey("my-service"));
     }
 }
