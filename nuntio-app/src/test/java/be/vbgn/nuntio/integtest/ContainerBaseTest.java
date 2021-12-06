@@ -18,6 +18,7 @@ import java.util.concurrent.TimeUnit;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.awaitility.core.ConditionFactory;
+import org.junit.jupiter.api.AfterEach;
 import org.testcontainers.containers.Network;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.utility.DockerImageName;
@@ -35,6 +36,12 @@ public abstract class ContainerBaseTest {
             .withNetwork(network);
 
     protected static final ConditionFactory await = await().timeout(2, TimeUnit.MINUTES);
+
+    @AfterEach
+    void dumpContainerLogs() {
+        log.info("Logs for dindContainer:\n{}", dindContainer.getLogs());
+        log.info("Logs for consulContainer:\n{}", consulContainer.getLogs());
+    }
 
     @SneakyThrows
     protected CreateContainerResponse createContainer(String imageId, SimpleContainerModifier containerModifier) {
