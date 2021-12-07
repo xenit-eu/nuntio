@@ -2,7 +2,7 @@ package be.vbgn.nuntio.engine.metrics;
 
 import io.micrometer.core.instrument.MeterRegistry;
 
-public class LiveWatchMetrics extends OperationMetrics{
+public class LiveWatchMetrics extends DiffOperationMetrics {
     private final MeterRegistry meterRegistry;
 
     public LiveWatchMetrics(MeterRegistry meterRegistry) {

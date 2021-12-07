@@ -7,9 +7,9 @@ import be.vbgn.nuntio.engine.availability.AvailabilityManager;
 import be.vbgn.nuntio.engine.diff.DiffResolver;
 import be.vbgn.nuntio.engine.diff.InitialRegistrationResolver;
 import be.vbgn.nuntio.engine.metrics.LiveWatchMetrics;
-import be.vbgn.nuntio.engine.metrics.OperationMetrics;
+import be.vbgn.nuntio.engine.metrics.DiffOperationMetrics;
+import be.vbgn.nuntio.engine.metrics.MetricsFactory;
 import io.micrometer.core.instrument.MeterRegistry;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -26,7 +26,7 @@ public class EngineConfiguration {
     @Bean
     AntiEntropyDaemon antiEntropyDaemon(ServicePlatform servicePlatform, ServiceRegistry serviceRegistry, DiffResolver diffResolver, MeterRegistry meterRegistry, EngineProperties engineProperties, AvailabilityManager availabilityManager) {
         AntiEntropyProperties antiEntropyProperties = engineProperties.getAntiEntropy();
-        return new AntiEntropyDaemon(servicePlatform, serviceRegistry, diffResolver, new OperationMetrics(meterRegistry, "anti-entropy"), antiEntropyProperties, availabilityManager);
+        return new AntiEntropyDaemon(servicePlatform, serviceRegistry, diffResolver, new DiffOperationMetrics(meterRegistry, "anti-entropy"), antiEntropyProperties, availabilityManager);
     }
 
     @Bean
@@ -41,7 +41,7 @@ public class EngineConfiguration {
             InitialRegistrationResolver initialRegistrationResolver,
             MeterRegistry meterRegistry
             ) {
-        return new PlatformServicesSynchronizer(servicePlatform, registry, diffResolver, initialRegistrationResolver, new OperationMetrics(meterRegistry, "sync"));
+        return new PlatformServicesSynchronizer(servicePlatform, registry, diffResolver, initialRegistrationResolver, new DiffOperationMetrics(meterRegistry, "sync"));
     }
 
     @Bean
@@ -52,5 +52,10 @@ public class EngineConfiguration {
     @Bean
     InitialRegistrationResolver initialRegistrationResolver(ServiceRegistry registry, EngineProperties engineProperties) {
         return new InitialRegistrationResolver(registry, engineProperties);
+    }
+
+    @Bean
+    MetricsFactory metricsFactory(MeterRegistry meterRegistry) {
+        return new MetricsFactory(meterRegistry);
     }
 }

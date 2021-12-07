@@ -8,13 +8,13 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.function.Consumer;
 
-public class OperationMetrics implements Consumer<Diff> {
+public class DiffOperationMetrics implements Consumer<Diff> {
     private final Counter operationAdd;
     private final Counter operationUpdate;
     private final Counter operationRemove;
     private final Counter failures;
 
-    public OperationMetrics(MeterRegistry meterRegistry, String systemType)  {
+    public DiffOperationMetrics(MeterRegistry meterRegistry, String systemType)  {
         operationAdd = meterRegistry.counter("nuntio.engine.operation", "engine", systemType, "operation", "add");
         operationUpdate = meterRegistry.counter("nuntio.engine.operation", "engine", systemType, "operation", "update");
         operationRemove = meterRegistry.counter("nuntio.engine.operation", "engine", systemType, "operation", "remove");

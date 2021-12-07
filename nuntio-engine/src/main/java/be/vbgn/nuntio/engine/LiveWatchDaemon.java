@@ -11,7 +11,6 @@ import be.vbgn.nuntio.engine.diff.DiffUtil;
 import be.vbgn.nuntio.engine.diff.EqualService;
 import be.vbgn.nuntio.engine.diff.RemoveService;
 import be.vbgn.nuntio.engine.metrics.LiveWatchMetrics;
-import be.vbgn.nuntio.engine.metrics.OperationMetrics;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;

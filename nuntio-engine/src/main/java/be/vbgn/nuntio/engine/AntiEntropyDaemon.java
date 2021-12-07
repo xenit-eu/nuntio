@@ -10,7 +10,7 @@ import be.vbgn.nuntio.engine.diff.AddService;
 import be.vbgn.nuntio.engine.diff.DiffResolver;
 import be.vbgn.nuntio.engine.diff.DiffUtil;
 import be.vbgn.nuntio.engine.diff.RemoveService;
-import be.vbgn.nuntio.engine.metrics.OperationMetrics;
+import be.vbgn.nuntio.engine.metrics.DiffOperationMetrics;
 import java.time.Duration;
 import java.util.Set;
 import lombok.AllArgsConstructor;
@@ -26,7 +26,7 @@ public class AntiEntropyDaemon implements SchedulingConfigurer {
     private ServicePlatform platform;
     private ServiceRegistry registry;
     private DiffResolver diffResolver;
-    private OperationMetrics antiEntropyMetrics;
+    private DiffOperationMetrics antiEntropyMetrics;
     private AntiEntropyProperties antiEntropyProperties;
     private AvailabilityManager availabilityManager;
 

@@ -227,7 +227,7 @@ Following registrator configuration options are supported:
 
 The Consul registry supports registering services to Consul.
 
-## Consul registry configuration
+### Consul registry configuration
 
 <table>
 <thead>

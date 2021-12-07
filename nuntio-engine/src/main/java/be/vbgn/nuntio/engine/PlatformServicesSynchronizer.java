@@ -7,7 +7,7 @@ import be.vbgn.nuntio.engine.diff.DiffResolver;
 import be.vbgn.nuntio.engine.diff.DiffUtil;
 import be.vbgn.nuntio.engine.diff.InitialRegistrationResolver;
 import be.vbgn.nuntio.engine.diff.RemoveService;
-import be.vbgn.nuntio.engine.metrics.OperationMetrics;
+import be.vbgn.nuntio.engine.metrics.DiffOperationMetrics;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -19,7 +19,7 @@ public class PlatformServicesSynchronizer {
     private final ServiceRegistry registry;
     private final DiffResolver diffResolver;
     private final InitialRegistrationResolver initialRegistrationResolver;
-    private final OperationMetrics syncMetrics;
+    private final DiffOperationMetrics syncMetrics;
 
     public void syncServices() {
         DiffUtil.diff(registry.findServices(), platform.findAll())

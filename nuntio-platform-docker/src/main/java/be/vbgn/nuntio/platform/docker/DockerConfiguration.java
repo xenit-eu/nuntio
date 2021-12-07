@@ -1,6 +1,6 @@
 package be.vbgn.nuntio.platform.docker;
 
-import be.vbgn.nuntio.api.platform.metrics.PlatformMetrics;
+import be.vbgn.nuntio.api.platform.metrics.PlatformMetricsFactory;
 import be.vbgn.nuntio.platform.docker.DockerProperties.PortBindConfiguration;
 import be.vbgn.nuntio.platform.docker.actuators.DockerHealthIndicator;
 import be.vbgn.nuntio.platform.docker.config.modifier.ExpandAnyBindingConfigurationModifier;
@@ -13,7 +13,6 @@ import be.vbgn.nuntio.platform.docker.config.parser.RegistratorCompatibleParser;
 import be.vbgn.nuntio.platform.docker.config.parser.ServiceConfigurationParser;
 import be.vbgn.nuntio.platform.docker.config.parser.SwitchingServiceConfigurationParser;
 import com.github.dockerjava.api.DockerClient;
-import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Arrays;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
@@ -59,9 +58,9 @@ public class DockerConfiguration {
             DockerContainerServiceDescriptionFactory serviceDescriptionFactory,
             @Lazy DockerContainerWatcher containerWatcher,
             DockerPlatformEventFactory eventFactory,
-            MeterRegistry meterRegistry
+            PlatformMetricsFactory metricsFactory
             ) {
-        return new DockerPlatform(dockerClient, serviceDescriptionFactory, containerWatcher, eventFactory, new PlatformMetrics(meterRegistry, "docker"));
+        return new DockerPlatform(dockerClient, serviceDescriptionFactory, containerWatcher, eventFactory, metricsFactory.createPlatformMetrics("docker"));
     }
 
     @Bean

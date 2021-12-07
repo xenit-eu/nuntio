@@ -1,4 +1,4 @@
-package be.vbgn.nuntio.api.registry.metrics;
+package be.vbgn.nuntio.engine.metrics;
 
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -8,14 +8,14 @@ import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-final class OperationMetrics {
+final class RegistryOperationMetrics {
 
     private final Timer operationTimer;
     private final Counter failureCounter;
     private final Counter successCounter;
 
-    static OperationMetrics create(MeterRegistry meterRegistry, String registryType, String operationName) {
-        return new OperationMetrics(
+    static RegistryOperationMetrics create(MeterRegistry meterRegistry, String registryType, String operationName) {
+        return new RegistryOperationMetrics(
                 meterRegistry.timer("nuntio.registry.operation.duration", "registry", registryType, "operation", operationName),
                 meterRegistry.counter("nuntio.registry.operation.failure", "registry", registryType, "operation", operationName),
                 meterRegistry.counter("nuntio.registry.operation.success", "registry", registryType, "operation", operationName)
