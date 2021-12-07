@@ -10,6 +10,21 @@ Nuntio watches for new Docker containers and inspects them to determine what ser
 Nuntio is highly extensible and configurable. It is possible to configure different platforms as service sources and to configure different service registries as targets.
 The default application is a Docker platform and Consul service registry.
 
+### Concepts
+
+Nuntio uses a couple of abstract concepts throughout its code and documentation.
+
+<dl>
+<dt>Service</dt><dd>A service is anything that listens on a TCP or UDP port.</dd>
+<dt>(Service) Platform</dt><dd>A platform is the thing that manages/runs processes that have services and can provide metadata about the process state (IP/port that it listens on, running or not, health status, ...).</dd>
+<dt>(Service) Registry</dt><dd>A registry is the thing where services are stored in, so they can be queried by other applications.</dd>
+<dt>Platform Service</dt><dd>A platform service is the application as seen by the Service Platform. Since a process can listen on multiple ports, it can contain multiple individual Services.</dd>
+<dt>Registry Service</dt><dd>A registry service is the service as stored in the Service Registry. It maps to exactly one Service.</dd>
+<dt>Check</dt><dd>A check is a component that checks the health of a Service. Checks can be handled by the Service Registry itself, or in Nuntio if the Service Registry does not support a check type.</dd>
+</dl>
+
+![Architecture overview](nuntio-architecture.drawio.svg)
+
 ### Configuration options
 
 Nuntio is a Spring Boot application. This means there are many ways to supply configuration parameters:
