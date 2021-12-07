@@ -35,10 +35,10 @@ public class EngineProperties {
         boolean healthcheck = true;
     }
 
-    public static enum ShutdownMode {
+    public enum ShutdownMode {
         UNREGISTER_SERVICES,
         UNREGISTER_HEARTBEAT,
         UNREGISTER_CHECKS,
-        NO_UNREGISTER
+        NOTHING
     }
 }

@@ -1,14 +1,10 @@
 package be.vbgn.nuntio.integration;
 
 import be.vbgn.nuntio.api.registry.CheckType;
-import be.vbgn.nuntio.api.registry.RegistryServiceIdentifier;
 import be.vbgn.nuntio.api.registry.ServiceRegistry;
 import be.vbgn.nuntio.engine.EngineProperties;
-import be.vbgn.nuntio.engine.EngineProperties.ShutdownMode;
 import java.util.Arrays;
 import lombok.AllArgsConstructor;
-import lombok.RequiredArgsConstructor;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextClosedEvent;
@@ -43,7 +39,7 @@ public class NuntioApplicationShutdown implements ApplicationListener<ContextClo
                 registry.findServices()
                         .forEach(serviceIdentifier -> registry.unregisterCheck(serviceIdentifier, CheckType.HEARTBEAT));
                 break;
-            case NO_UNREGISTER:
+            case NOTHING:
                 log.info("Shutting down application, not unregistering anything.");
                 break;
         }

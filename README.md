@@ -54,6 +54,17 @@ Only global configuration options are documented here.
 <tr>
 <td><code>nuntio.engine.checks.healthcheck</code></td><td><code>true</code></td><td>Enable registration of healthcheck check.</td>
 </tr>
+<tr>
+<td><code>nuntio.engine.shutdownMode</code></td><td><code>UNREGISTER_CHECKS</code></td><td>
+What actions nuntio should take when its process is terminated.
+
+* <code>UNREGISTER_SERVICES</code>: Unregister all services that were registered by this nuntio instance.
+* <code>UNREGISTER_CHECKS</code>: Unregister all checks for all services that were registered by this nuntio instance.
+* <code>UNREGISTER_HEARTBEAT</code>: Unregister only the heartbeat check.
+* <code>NOTHING</code>: Do not perform any special operation when shutting down.
+
+</td>
+</tr>
 </tbody>
 </table>
 
@@ -90,8 +101,8 @@ The Docker platform registers services for containers with certain labels (or en
 
 Which IP address/port to publish for containers.
 
-* PUBLISHED: Only published ports are used. They are used with the host IP and bound port.
-* INTERNAL: All exposed ports are used. They are used with the internal container IP and exposed port. If there are multiple internal container IPs (when the container is attached to multiple networks), no service will be published. To select a specific (e.g. overlay) network, a network filter can be specified with <code>nuntio.docker.bind.filter</code>.
+* <code>PUBLISHED</code>: Only published ports are used. They are used with the host IP and bound port.
+* <code>INTERNAL</code>: All exposed ports are used. They are used with the internal container IP and exposed port. If there are multiple internal container IPs (when the container is attached to multiple networks), no service will be published. To select a specific (e.g. overlay) network, a network filter can be specified with <code>nuntio.docker.bind.filter</code>.
 
 </td>
 </tr>
