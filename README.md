@@ -129,7 +129,7 @@ Which IP address/port to publish for containers.
 <td><code>nuntio.docker.nuntioLabel.enabled</code></td><td><code>true</code></td><td>Enables configuring services on Docker containers with labels following the [label specification](#docker-labels-for-nuntio)</td>
 </tr>
 <tr>
-<td><code>nuntio.docker.nuntioLabel.prefix</code></td><td><code>nuntio.vbgn.be</code></td><td>Prefix for Nuntio labels.</td>
+<td><code>nuntio.docker.nuntioLabel.prefix</code></td><td><code>nuntio.xenit.eu</code></td><td>Prefix for Nuntio labels.</td>
 </tr>
 <tr>
 <td><code>nuntio.docker.registratorCompat.enabled</code></td><td><code>false</code></td><td>Enable compatibility with some registrator labels/environment variables. See [Registrator compatibility](#registrator-compatibility-mode) for details on which parts are implemented.</td>
@@ -161,10 +161,10 @@ The labels follow these formats:
 
 Label examples
 
- * `nuntio.vbgn.be/service=my-service,other-service`: All ports of the container are registered under both `my-service` and `other-service`
- * `nuntio.vbgn.be/80/service=lb-front`: Port `80/tcp` of the container is registered under `lb-front`
- * `nuntio.vbgn.be/udp:53/tags=authoritative`: The services for port `53/udp` of the container will have the `authoritative` tag
- * `nuntio.vbgn.be/metadata/my-key=interesting-value`: The services for all ports of the container will have metadata value `my-key=interesting-value`
+ * `nuntio.xenit.eu/service=my-service,other-service`: All ports of the container are registered under both `my-service` and `other-service`
+ * `nuntio.xenit.eu/80/service=lb-front`: Port `80/tcp` of the container is registered under `lb-front`
+ * `nuntio.xenit.eu/udp:53/tags=authoritative`: The services for port `53/udp` of the container will have the `authoritative` tag
+ * `nuntio.xenit.eu/metadata/my-key=interesting-value`: The services for all ports of the container will have metadata value `my-key=interesting-value`
 
 Some concrete examples:
 
@@ -175,17 +175,17 @@ services:
       ports:
         - 1234:5432
       labels:
-        nuntio.vbgn.be/service: db
-        nuntio.vbgn.be/tags: primary
-        nuntio.vbgn.be/metadata/hosted-dbs: metrics,users
+        nuntio.xenit.eu/service: db
+        nuntio.xenit.eu/tags: primary
+        nuntio.xenit.eu/metadata/hosted-dbs: metrics,users
    db2:
      image: postgres
      ports:
        - 1235:5432
      labels:
-       nuntio.vbgn.be/5432/service: db,db-analytics
-       nuntio.vbgn.be/5432/tags: secondary
-       nuntio.vbgn.be/5432/metadata/hosted-dbs: metrics,users
+       nuntio.xenit.eu/5432/service: db,db-analytics
+       nuntio.xenit.eu/5432/tags: secondary
+       nuntio.xenit.eu/5432/metadata/hosted-dbs: metrics,users
    app:
      image: my-app:latest
      ports:
@@ -193,16 +193,16 @@ services:
        - 8081
        - 8082
      labels:
-       nuntio.vbgn.be/8080/service: app-public
-       nuntio.vbgn.be/8080/metadata/published-domain: my-awesome-app.example
-       nuntio.vbgn.be/8081/service: app-admin
-       nuntio.vbgn.be/metadata/prometheus-scrape: /metrics/prometheus
+       nuntio.xenit.eu/8080/service: app-public
+       nuntio.xenit.eu/8080/metadata/published-domain: my-awesome-app.example
+       nuntio.xenit.eu/8081/service: app-admin
+       nuntio.xenit.eu/metadata/prometheus-scrape: /metrics/prometheus
    custom-dns:
       image: my-dns-server:latest
       ports:
         - 10.5.2.1:53:5300/udp 
       labels:
-        nuntio.vbgn.be/udp:5300/service: dns
+        nuntio.xenit.eu/udp:5300/service: dns
 ```
 
 This will register the following services:

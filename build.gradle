@@ -8,7 +8,7 @@ reckon {
 }
 
 allprojects {
-    group 'be.vbgn.nuntio'
+    group 'be.xenit.nuntio'
 
     repositories {
         mavenCentral()

@@ -1,1 +1,1 @@
-org.springframework.boot.diagnostics.FailureAnalyzer=be.vbgn.nuntio.integration.diagnostics.MissingImplementationFailureAnalyzer
+org.springframework.boot.diagnostics.FailureAnalyzer=eu.xenit.nuntio.integration.diagnostics.MissingImplementationFailureAnalyzer
