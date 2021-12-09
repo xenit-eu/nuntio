@@ -48,14 +48,17 @@ createDockerFile {
 
 dockerBuild {
     repositories = ["hub.xenit.eu/public/nuntio", "docker.io/xenit/nuntio"]
-    tags = ["latest", "${project.version}"]
+    tags = [
+            ("${project.version}".endsWith("-SNAPSHOT"))?"nightly":"latest",
+            "${project.version}"
+    ]
 }
 
 
 test {
     useJUnitPlatform()
     dependsOn(tasks.buildDockerImage)
-    systemProperty("nuntio.image", "docker.io/xenit/nuntio:latest")
+    systemProperty("nuntio.image", buildDockerImage.images.forUseAtConfigurationTime().get()[0])
 }
 
 test.shouldRunAfter(
