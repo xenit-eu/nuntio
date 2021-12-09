@@ -3,6 +3,7 @@ package eu.xenit.nuntio.integtest;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.emptyCollectionOf;
 import static org.hamcrest.Matchers.emptyString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasEntry;
@@ -128,6 +129,7 @@ public class ContainerRegistrationTest extends ContainerBaseTest {
         dockerClient.startContainerCmd(createContainer.getId()).exec();
 
         await.until(consulWaiter().serviceExists("mont-blanc-123"));
+        await.until(consulWaiter().serviceExists("mont-blanc-444"));
 
         var services = consulClient.getCatalogServices(CatalogServicesRequest.newBuilder().build()).getValue();
 
@@ -135,8 +137,10 @@ public class ContainerRegistrationTest extends ContainerBaseTest {
         assertThat(services, hasKey("mont-blanc-444"));
         assertThat(services, not(hasKey("mont-blanc")));
 
+        var nottaggedService = consulClient.getCatalogService("mont-blanc-123", CatalogServiceRequest.newBuilder().build()).getValue().get(0);
         var taggedService = consulClient.getCatalogService("mont-blanc-444", CatalogServiceRequest.newBuilder().build()).getValue().get(0);
 
+        assertThat(nottaggedService.getServiceTags(), emptyCollectionOf(String.class));
         assertThat(taggedService.getServiceTags(), equalTo(Collections.singletonList("tls")));
     }
 
