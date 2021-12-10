@@ -24,6 +24,7 @@ public class ConsulContainer extends GenericContainer<ConsulContainer> {
             HealthCheck healthCheck = new HealthCheck();
             healthCheck.withTest(Arrays.asList("CMD", "consul", "info"));
             healthCheck.withInterval(Duration.ofSeconds(1).toNanos());
+            healthCheck.withStartPeriod(Duration.ofSeconds(10).toNanos());
             createContainerCmd.withHealthcheck(healthCheck);
         });
     }

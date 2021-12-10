@@ -72,6 +72,7 @@ public class DindContainer extends GenericContainer<DindContainer> {
             HealthCheck healthCheck = new HealthCheck();
             healthCheck.withTest(Arrays.asList("CMD", "docker", "info"));
             healthCheck.withInterval(Duration.ofSeconds(1).toNanos());
+            healthCheck.withStartPeriod(Duration.ofSeconds(10).toNanos());
             createContainerCmd.withHealthcheck(healthCheck);
         });
         setStartupCheckStrategy(new HealthcheckPassingStartupCheckStrategy());

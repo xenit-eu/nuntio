@@ -18,8 +18,8 @@ public class NuntioContainer extends GenericContainer<NuntioContainer> implement
         setStartupCheckStrategy(new HealthcheckPassingStartupCheckStrategy());
         withCreateContainerCmdModifier(createContainerCmd -> {
             HealthCheck healthCheck = new HealthCheck();
-            healthCheck.withInterval(Duration.ofSeconds(1).toNanos());
-            healthCheck.withStartPeriod(Duration.ofSeconds(10).toNanos());
+            healthCheck.withInterval(Duration.ofSeconds(2).toNanos());
+            healthCheck.withStartPeriod(Duration.ofSeconds(20).toNanos());
             createContainerCmd.withHealthcheck(healthCheck);
         });
     }
