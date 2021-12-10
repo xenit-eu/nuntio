@@ -47,7 +47,7 @@ jobs:
         uses: docker/login-action@v1.10.0
         with:
           registry: ${{ secrets.XENIT_DOCKER_REGISTRY_URL }}
-          username: ${{ secrets.XENIT_DOCKER_REGISTRY_USER }}
+          username: ${{ secrets.XENIT_DOCKER_REGISTRY_USERNAME }}
           password: ${{ secrets.XENIT_DOCKER_REGISTRY_PASSWORD }}
       - name: Publish docker images
         run: ./gradlew pushDockerImage
