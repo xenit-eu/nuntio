@@ -20,11 +20,15 @@ import com.github.dockerjava.api.command.CreateContainerResponse;
 import com.github.dockerjava.api.model.ExposedPort;
 import com.github.dockerjava.api.model.Ports.Binding;
 import com.github.dockerjava.api.model.RestartPolicy;
+import java.time.Duration;
+import lombok.extern.slf4j.Slf4j;
+import org.awaitility.core.ConditionTimeoutException;
 import org.hamcrest.MatcherAssert;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
 @ContainerTests
+@Slf4j
 public class SystemRestartTest extends ContainerBaseTest {
     private NuntioContainer nuntio = new NuntioContainer()
             .withDindContainer(dindContainer)
@@ -39,7 +43,8 @@ public class SystemRestartTest extends ContainerBaseTest {
 
 
     @NuntioTest
-    void testRestartDocker(DockerClient dockerClient, ConsulClient consulClient, RegistrationContainer registrationContainer) {
+    void testRestartDocker(DockerClient dockerClient, ConsulClient consulClient, RegistrationContainer registrationContainer)
+            throws InterruptedException {
         CreateContainerResponse container = createContainer(
                 SimpleContainerModifier.withPortBinding(ExposedPort.tcp(80), Binding.empty())
                         .andThen(SimpleContainerModifier.withLabel("nuntio.xenit.eu/service", "my-service"))
@@ -62,17 +67,27 @@ public class SystemRestartTest extends ContainerBaseTest {
 
         // Simulate full restart of docker (including hosted nuntio container)
         registrationContainer.stop();
-        dindContainer.getDockerClient().restartContainerCmd(dindContainer.getContainerId()).exec();
+        for(int i = 0; i < 5; i++) {
+            dindContainer.getDockerClient().stopContainerCmd(dindContainer.getContainerId()).exec();
+            Thread.sleep(Duration.ofSeconds(5).toMillis());
+            dindContainer.getDockerClient().killContainerCmd(dindContainer.getContainerId()).exec();
+            Thread.sleep(Duration.ofSeconds(2).toMillis());
+            dindContainer.getDockerClient().startContainerCmd(dindContainer.getContainerId()).exec();
 
-
-        await.until(() -> {
             try {
-                dindContainer.getDindClient().pingCmd().exec();
-                return true;
-            } catch(Exception e) {
-                return false;
+                await.until(() -> {
+                    try {
+                        dindContainer.getDindClient().pingCmd().exec();
+                        return true;
+                    } catch (Exception e) {
+                        return false;
+                    }
+                });
+                break;
+            } catch (ConditionTimeoutException e) {
+                log.info("Docker did not come up properly. Retrying container restart (attempt {})", i);
             }
-        });
+        }
 
         // Re-assign dockerClient, because mapped port of dind has changed
         dockerClient = dindContainer.getDindClient();
