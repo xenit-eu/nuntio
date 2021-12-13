@@ -21,13 +21,6 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class NuntioIntegrationConfiguration {
 
-
-    @Bean
-    @ConditionalOnBean(NuntioApplicationNormalStartup.class)
-    NuntioApplicationShutdown applicationShutdown(ServiceRegistry serviceRegistry, LiveWatchManager liveWatchManager, EngineProperties engineProperties) {
-        return new NuntioApplicationShutdown(serviceRegistry, liveWatchManager, engineProperties);
-    }
-
     @Bean
     @ConditionalOnProperty("nuntio.app.unregister-all")
     NuntioUnregisterAllStartup unregisterAllStartup(ServiceRegistry serviceRegistry,
@@ -42,7 +35,13 @@ public class NuntioIntegrationConfiguration {
     }
 
     @Bean
-    @ConditionalOnMissingBean(NuntioApplicationStartup.class)
+    @ConditionalOnBean(NuntioApplicationNormalStartup.class)
+    NuntioApplicationShutdown applicationShutdown(ServiceRegistry serviceRegistry, LiveWatchManager liveWatchManager, EngineProperties engineProperties) {
+        return new NuntioApplicationShutdown(serviceRegistry, liveWatchManager, engineProperties);
+    }
+
+    @Bean
+    @ConditionalOnBean(NuntioApplicationNormalStartup.class)
     LiveWatchManager liveWatchManager(LiveWatchDaemon liveWatchDaemon, EngineProperties engineProperties) {
         if(engineProperties.getLive().isEnabled()) {
             return new LiveWatchManagerImpl(liveWatchDaemon);

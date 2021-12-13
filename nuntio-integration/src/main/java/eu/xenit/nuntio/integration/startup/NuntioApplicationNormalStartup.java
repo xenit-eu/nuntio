@@ -11,7 +11,7 @@ import org.springframework.boot.ApplicationRunner;
 
 @Slf4j
 @AllArgsConstructor
-public class NuntioApplicationNormalStartup implements ApplicationRunner {
+public class NuntioApplicationNormalStartup implements NuntioApplicationStartup {
 
     private PlatformServicesSynchronizer platformServicesRegistrar;
     private final Retry retry = Retry.of("startup-sync", () -> {
