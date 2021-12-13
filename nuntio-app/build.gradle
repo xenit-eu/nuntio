@@ -67,3 +67,12 @@ test.shouldRunAfter(
         .collect(Collectors.toList())
 )
 
+
+if(ci.isCi()) {
+    docker {
+        registryCredentials {
+            username = System.getenv("DOCKER_USER")
+            password = System.getenv("DOCKER_PASSWORD")
+        }
+    }
+}
