@@ -37,12 +37,6 @@ public abstract class ContainerBaseTest {
 
     protected static final ConditionFactory await = await().timeout(2, TimeUnit.MINUTES);
 
-    @AfterEach
-    void dumpContainerLogs() {
-        log.info("Logs for dindContainer:\n{}", dindContainer.getLogs());
-        log.info("Logs for consulContainer:\n{}", consulContainer.getLogs());
-    }
-
     @SneakyThrows
     protected CreateContainerResponse createContainer(String imageId, SimpleContainerModifier containerModifier) {
         DockerImageName dockerImageName = DockerImageName.parse(imageId);
