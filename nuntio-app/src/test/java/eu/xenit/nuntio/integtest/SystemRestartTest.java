@@ -7,6 +7,7 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.not;
 
 import com.github.dockerjava.api.exception.ConflictException;
+import com.github.dockerjava.api.exception.NotModifiedException;
 import eu.xenit.nuntio.integtest.containers.NuntioContainer;
 import eu.xenit.nuntio.integtest.containers.RegistrationContainer;
 import eu.xenit.nuntio.integtest.jupiter.annotations.ContainerTests;
@@ -69,12 +70,16 @@ public class SystemRestartTest extends ContainerBaseTest {
         // Simulate full restart of docker (including hosted nuntio container)
         registrationContainer.stop();
         for(int i = 0; i < 5; i++) {
-            dindContainer.getDockerClient().stopContainerCmd(dindContainer.getContainerId()).exec();
-            Thread.sleep(Duration.ofSeconds(5).toMillis());
+            try {
+                dindContainer.getDockerClient().stopContainerCmd(dindContainer.getContainerId()).exec();
+                Thread.sleep(Duration.ofSeconds(5).toMillis());
+            } catch(NotModifiedException e) {
+                log.info("Container was already stopped.");
+            }
             try {
                 dindContainer.getDockerClient().killContainerCmd(dindContainer.getContainerId()).exec();
                 Thread.sleep(Duration.ofSeconds(2).toMillis());
-            } catch(ConflictException e) {
+            } catch (ConflictException|NotModifiedException e) {
                 // No-op, container is already dead
             }
             dindContainer.getDockerClient().startContainerCmd(dindContainer.getContainerId()).exec();
