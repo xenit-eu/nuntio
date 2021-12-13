@@ -63,6 +63,7 @@ public class LiveWatchDaemon implements Runnable {
                 availabilityManager.registerSuccess(this);
             } catch(InterruptedException e) {
                 log.info("Caught interrupt. Shutting down live-watch daemon");
+                Thread.currentThread().interrupt();
                 return;
             } catch (Throwable e) {
                 log.error("Error during livewatch", e);
