@@ -31,7 +31,6 @@ public class LiveWatchManagerImpl implements LiveWatchManager {
         log.info("Starting live watch daemon thread");
         liveWatchThread = new Thread(liveWatchDaemon);
         liveWatchThread.setName("LiveWatchDaemon");
-        liveWatchThread.setDaemon(true);
         liveWatchThread.start();
     }
 }
