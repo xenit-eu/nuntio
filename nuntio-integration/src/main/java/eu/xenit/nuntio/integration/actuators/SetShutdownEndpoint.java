@@ -21,6 +21,6 @@ public class SetShutdownEndpoint {
     public Map<String, String> setShutdown(ShutdownMode shutdownMode) {
         log.info("Setting shutdown mode to {}", shutdownMode);
         engineProperties.setShutdownMode(shutdownMode);
-        return Collections.emptyMap();
+        return Collections.singletonMap("shutdownMode", shutdownMode.name());
     }
 }
