@@ -47,9 +47,9 @@ createDockerFile {
 }
 
 dockerBuild {
-    repositories = ["hub.xenit.eu/public/nuntio", "docker.io/xenit/nuntio"]
+    repositories = ["docker.io/xenit/nuntio"]
     tags = [
-            ("${project.version}".endsWith("-SNAPSHOT"))?"nightly":"latest",
+            ("${project.version}".endsWith("-SNAPSHOT"))?"development":"latest",
             "${project.version}"
     ]
 }
