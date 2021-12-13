@@ -49,12 +49,9 @@ public class PublishedPortConfigurationModifier implements ServiceConfigurationM
                 .filter(Objects::nonNull)
                 .flatMap(Arrays::stream)
                 .map(binding -> {
-                    ServiceBinding publishedServiceBinding = ServiceBinding.fromPortAndProtocol(
-                            binding.getHostPortSpec(), configuration.getServiceBinding().getProtocol().orElse("tcp"));
-                    if (hasUsefulIp(binding.getHostIp())) {
-                        return publishedServiceBinding.withIp(binding.getHostIp());
-                    }
-                    return publishedServiceBinding;
+                    return ServiceBinding.fromPortAndProtocol(
+                            binding.getHostPortSpec(), configuration.getServiceBinding().getProtocol().orElse("tcp"))
+                            .withIp(binding.getHostIp());
                 })
                 .collect(Collectors.toSet());
 
@@ -73,12 +70,4 @@ public class PublishedPortConfigurationModifier implements ServiceConfigurationM
     }
 
 
-    private static boolean hasUsefulIp(String ip) {
-        try {
-            InetAddress address = InetAddress.getByName(ip);
-            return !address.isAnyLocalAddress();
-        } catch (UnknownHostException e) {
-            return true;
-        }
-    }
 }

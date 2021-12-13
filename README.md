@@ -112,6 +112,9 @@ The Docker platform registers services for containers with certain labels (or en
 <td><code>nuntio.docker.daemon.certPath</code></td><td><code>null</code></td><td>Path to certificates needed for TLS verification</td>
 </tr>
 <tr>
+<td><code>nuntio.docker.addressFamily.[ipv4|ipv6]</code></td><td><code>true</code></td><td>Disable mapping services with IPv4 or IPv6 addresses</td>
+</tr>
+<tr>
 <td><code>nuntio.docker.bind</code></td><td><code>PUBLISHED</code></td><td>Values: <code>PUBLISHED</code>/<code>INTERNAL</code>.
 
 Which IP address/port to publish for containers.

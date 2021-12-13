@@ -50,8 +50,7 @@ class PublishedPortConfigurationModifierTest {
         var configurationModifier = new PublishedPortConfigurationModifier();
 
         var newConfiguration = configurationModifier.modifyConfiguration(configuration, inspectContainerResponse)
-                .collect(
-                        Collectors.toSet());
+                .collect(Collectors.toSet());
 
         assertEquals(Collections.emptySet(), newConfiguration);
     }
@@ -74,7 +73,7 @@ class PublishedPortConfigurationModifierTest {
                 .collect(Collectors.toSet());
 
         assertEquals(Collections.singleton(
-                configuration.withBinding(ServiceBinding.fromPortAndProtocol(1234, "tcp"))
+                configuration.withBinding(ServiceBinding.fromPortAndProtocol(1234, "tcp").withIp("0.0.0.0"))
         ), newConfiguration);
     }
 
@@ -121,8 +120,9 @@ class PublishedPortConfigurationModifierTest {
                 .collect(Collectors.toSet());
 
         assertEquals(Set.of(
-                configuration.withBinding(ServiceBinding.fromPortAndProtocol(1234, "tcp")),
-                configuration.withBinding(ServiceBinding.fromPortAndProtocol(567, "tcp"))
+                configuration.withBinding(ServiceBinding.fromPortAndProtocol(1234, "tcp").withIp("0.0.0.0")),
+                configuration.withBinding(ServiceBinding.fromPortAndProtocol(1234, "tcp").withIp("::")),
+                configuration.withBinding(ServiceBinding.fromPortAndProtocol(567, "tcp").withIp("::"))
         ), newConfiguration);
     }
 

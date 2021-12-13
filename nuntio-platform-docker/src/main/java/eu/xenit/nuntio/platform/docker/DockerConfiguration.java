@@ -6,6 +6,8 @@ import eu.xenit.nuntio.platform.docker.actuators.DockerHealthIndicator;
 import eu.xenit.nuntio.platform.docker.config.modifier.ExpandAnyBindingConfigurationModifier;
 import eu.xenit.nuntio.platform.docker.config.modifier.InternalNetworkConfigurationModifier;
 import eu.xenit.nuntio.platform.docker.config.modifier.PublishedPortConfigurationModifier;
+import eu.xenit.nuntio.platform.docker.config.modifier.RemoveAnyLocalAddressConfigurationModifier;
+import eu.xenit.nuntio.platform.docker.config.modifier.RemoveDisabledBindFamiliesAddressConfigurationModifier;
 import eu.xenit.nuntio.platform.docker.config.modifier.ServiceConfigurationModifier;
 import eu.xenit.nuntio.platform.docker.config.parser.NullServiceConfigurationParser;
 import eu.xenit.nuntio.platform.docker.config.parser.NuntioLabelsParser;
@@ -23,6 +25,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Primary;
+import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 
 @Configuration
@@ -94,12 +97,13 @@ public class DockerConfiguration {
     }
 
     @Bean
-    @Order(1)
+    @Order(Ordered.HIGHEST_PRECEDENCE)
     ServiceConfigurationModifier expandAnyBindingConfigurationModifier(DockerProperties dockerProperties) {
         return new ExpandAnyBindingConfigurationModifier();
     }
 
     @Bean
+    @Order(Ordered.HIGHEST_PRECEDENCE + 100)
     ServiceConfigurationModifier internalNetworkConfigurationModifier(DockerProperties dockerProperties, DockerClient dockerClient, @Value("${nuntio.docker.bind.filter:}") String networkFilter) {
         if(dockerProperties.getBind() == PortBindConfiguration.INTERNAL) {
             return new InternalNetworkConfigurationModifier(dockerClient, networkFilter);
@@ -108,11 +112,24 @@ public class DockerConfiguration {
     }
 
     @Bean
+    @Order(Ordered.HIGHEST_PRECEDENCE + 100)
     ServiceConfigurationModifier publishedPortConfigurationModifier(DockerProperties dockerProperties) {
         if(dockerProperties.getBind() == PortBindConfiguration.PUBLISHED) {
             return new PublishedPortConfigurationModifier();
         }
         return null;
+    }
+
+    @Bean
+    @Order(Ordered.HIGHEST_PRECEDENCE + 200)
+    ServiceConfigurationModifier removeDisabledBindFamiliesConfigurationModifier(DockerProperties dockerProperties) {
+        return new RemoveDisabledBindFamiliesAddressConfigurationModifier(dockerProperties.getAddressFamily());
+    }
+
+    @Bean
+    @Order(Ordered.LOWEST_PRECEDENCE - 100)
+    ServiceConfigurationModifier removeAnyLocalAddressConfigurationModifier() {
+        return new RemoveAnyLocalAddressConfigurationModifier();
     }
 
     @Bean
