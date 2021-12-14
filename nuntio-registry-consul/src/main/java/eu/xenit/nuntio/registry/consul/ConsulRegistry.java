@@ -104,7 +104,7 @@ public class ConsulRegistry implements ServiceRegistry {
 
     private static String createCheckId(ConsulServiceIdentifier registryServiceIdentifier, CheckType checkType) {
         return registryServiceIdentifier.getServiceIdentifier()
-                .withParts(registryServiceIdentifier.getServiceId(), checkType.getCheckId())
+                .withParts(checkType.getCheckId())
                 .toMachineString();
     }
 
