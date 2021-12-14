@@ -11,7 +11,6 @@ public class DockerProperties {
     private DaemonProperties daemon = new DaemonProperties();
 
     private PortBindConfiguration bind = PortBindConfiguration.PUBLISHED;
-    private AddressFamilies addressFamily = new AddressFamilies();
 
     private NuntioLabelProperties nuntioLabel =new NuntioLabelProperties();
     private RegistratorCompatibleProperties registratorCompat = new RegistratorCompatibleProperties();
@@ -41,9 +40,4 @@ public class DockerProperties {
         private boolean explicit = false;
     }
 
-    @Data
-    public static class AddressFamilies {
-        private boolean ipv4 = true;
-        private boolean ipv6 = true;
-    }
 }

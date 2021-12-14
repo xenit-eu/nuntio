@@ -5,16 +5,15 @@ import com.github.dockerjava.api.model.HealthCheck;
 import java.time.Duration;
 import java.util.Arrays;
 import lombok.Getter;
+import lombok.Setter;
 import org.testcontainers.containers.GenericContainer;
 
 @Getter
 public class ConsulContainer extends GenericContainer<ConsulContainer> {
     private int clientPort = 8500;
 
-    @Override
-    protected void configure() {
-        addExposedPort(getClientPort());
-    }
+    @Setter
+    private String advertiseAddress = "127.0.0.1";
 
     public ConsulContainer() {
         super("docker.io/library/consul:latest");
@@ -27,6 +26,12 @@ public class ConsulContainer extends GenericContainer<ConsulContainer> {
             healthCheck.withStartPeriod(Duration.ofSeconds(10).toNanos());
             createContainerCmd.withHealthcheck(healthCheck);
         });
+    }
+
+    @Override
+    protected void configure() {
+        addExposedPort(getClientPort());
+        setCommand("agent", "-dev", "-client=0.0.0.0", "-advertise="+getAdvertiseAddress());
     }
 
     public ConsulClient getConsulClient() {

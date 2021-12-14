@@ -1,11 +1,11 @@
-package eu.xenit.nuntio.platform.docker.config.modifier;
+package eu.xenit.nuntio.engine.postprocessor;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.github.dockerjava.api.command.InspectContainerResponse;
 import eu.xenit.nuntio.api.platform.PlatformServiceConfiguration;
+import eu.xenit.nuntio.api.platform.PlatformServiceDescription;
 import eu.xenit.nuntio.api.platform.ServiceBinding;
-import eu.xenit.nuntio.platform.docker.DockerProperties.AddressFamilies;
+import eu.xenit.nuntio.engine.EngineProperties.AddressFamilies;
 import java.util.Collections;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -14,7 +14,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 
-class RemoveDisabledBindFamiliesAddressConfigurationModifierTest {
+class RemoveDisabledAddressFamiliesPostProcessorTest {
 
     private static <T> T mock(Class<T> clazz) {
         return Mockito.mock(clazz, (invocation) -> {
@@ -47,9 +47,9 @@ class RemoveDisabledBindFamiliesAddressConfigurationModifierTest {
                 .serviceBinding(ServiceBinding.fromPort(8080).withIp(ip.getAddr()))
                 .build();
 
-        var modifier = new RemoveDisabledBindFamiliesAddressConfigurationModifier(new AddressFamilies());
+        var postProcessor = new RemoveDisabledAddressFamiliesPostProcessor(new AddressFamilies());
 
-        var newConfigurations = modifier.modifyConfiguration(configuration, mock(InspectContainerResponse.class)).collect(
+        var newConfigurations = postProcessor.process(mock(PlatformServiceDescription.class), configuration).collect(
                 Collectors.toSet());
 
         assertEquals(Collections.singleton(
@@ -67,9 +67,9 @@ class RemoveDisabledBindFamiliesAddressConfigurationModifierTest {
         var addressFamilies = new AddressFamilies();
         addressFamilies.setIpv6(false);
 
-        var modifier = new RemoveDisabledBindFamiliesAddressConfigurationModifier(addressFamilies);
+        var postProcessor = new RemoveDisabledAddressFamiliesPostProcessor(addressFamilies);
 
-        var newConfigurations = modifier.modifyConfiguration(configuration, mock(InspectContainerResponse.class)).collect(
+        var newConfigurations = postProcessor.process(mock(PlatformServiceDescription.class), configuration).collect(
                 Collectors.toSet());
 
         if(!ip.isIpv6()) {
@@ -91,9 +91,9 @@ class RemoveDisabledBindFamiliesAddressConfigurationModifierTest {
         var addressFamilies = new AddressFamilies();
         addressFamilies.setIpv4(false);
 
-        var modifier = new RemoveDisabledBindFamiliesAddressConfigurationModifier(addressFamilies);
+        var postProcessor = new RemoveDisabledAddressFamiliesPostProcessor(addressFamilies);
 
-        var newConfigurations = modifier.modifyConfiguration(configuration, mock(InspectContainerResponse.class)).collect(
+        var newConfigurations = postProcessor.process(mock(PlatformServiceDescription.class), configuration).collect(
                 Collectors.toSet());
 
         if(ip.isIpv6()) {
@@ -116,12 +116,11 @@ class RemoveDisabledBindFamiliesAddressConfigurationModifierTest {
         addressFamilies.setIpv4(false);
         addressFamilies.setIpv6(false);
 
-        var modifier = new RemoveDisabledBindFamiliesAddressConfigurationModifier(addressFamilies);
+        var postProcessor = new RemoveDisabledAddressFamiliesPostProcessor(addressFamilies);
 
-        var newConfigurations = modifier.modifyConfiguration(configuration, mock(InspectContainerResponse.class)).collect(
+        var newConfigurations = postProcessor.process(mock(PlatformServiceDescription.class), configuration).collect(
                 Collectors.toSet());
 
         assertEquals(Collections.emptySet(), newConfigurations);
     }
-
 }

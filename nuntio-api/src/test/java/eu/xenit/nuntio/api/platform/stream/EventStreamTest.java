@@ -3,7 +3,6 @@ package eu.xenit.nuntio.api.platform.stream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import eu.xenit.nuntio.api.FakeEventStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
