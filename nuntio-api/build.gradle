@@ -2,19 +2,3 @@ plugins {
     id 'java-library'
     id 'java-test-fixtures'
 }
-
-dependencies {
-    annotationProcessor 'org.projectlombok:lombok:1.18.20'
-    compileOnly 'org.projectlombok:lombok:1.18.20'
-
-    api platform(project(':nuntio-bom'))
-    implementation platform(project(':nuntio-bom'))
-    implementation 'org.slf4j:slf4j-api'
-
-    testImplementation 'org.junit.jupiter:junit-jupiter:5.7.2'
-}
-
-
-test {
-    useJUnitPlatform()
-}

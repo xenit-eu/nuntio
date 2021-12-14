@@ -9,10 +9,6 @@ plugins {
 }
 
 dependencies {
-    annotationProcessor 'org.projectlombok:lombok:1.18.20'
-    compileOnly 'org.projectlombok:lombok:1.18.20'
-
-    implementation platform(project(':nuntio-bom'))
     implementation project(':nuntio-integration')
     implementation project(':nuntio-platform-docker')
     implementation project(':nuntio-registry-consul')
@@ -28,8 +24,6 @@ dependencies {
 
     testImplementation platform('org.testcontainers:testcontainers-bom:1.16.0')
     testImplementation 'org.testcontainers:junit-jupiter'
-    testImplementation platform('org.junit:junit-bom:5.8.1')
-    testImplementation 'org.junit.jupiter:junit-jupiter'
     testImplementation 'com.ecwid.consul:consul-api:1.4.5'
     testImplementation platform('com.github.docker-java:docker-java-bom:3.2.12')
     testImplementation 'com.github.docker-java:docker-java-core'
