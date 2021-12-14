@@ -55,17 +55,23 @@ public class RemoveDisabledAddressFamiliesPostProcessor implements PlatformServi
 
         ServiceBinding serviceBinding = serviceConfiguration.getServiceBinding();
 
+        if(!serviceBinding.getIp().isPresent()) {
+            log.debug("Keeping service {} because it is not set", serviceConfiguration);
+            return Stream.of(serviceConfiguration);
+        }
+
         Optional<AddressType> addressType = serviceBinding.getIp()
                 .flatMap(this::getAddressType);
 
         boolean shouldBeKept = addressType.map(this::shouldBeKept).orElse(false);
 
+
         if(shouldBeKept) {
-            log.trace("Keeping address {} ({}) because it matches policy {}", serviceBinding.getIp(), addressType, familiesToKeep);
+            log.trace("Keeping address {} ({}) of service {} because it matches policy {}", serviceBinding.getIp(), addressType, serviceConfiguration, familiesToKeep);
             return Stream.of(serviceConfiguration);
         }
 
-        log.debug("Removing address {} ({}) because it does not match policy {}", serviceBinding.getIp(), addressType, familiesToKeep);
+        log.debug("Removing address {} ({}) of service {} because it does not match policy {}", serviceBinding.getIp(), addressType, serviceConfiguration, familiesToKeep);
 
         return Stream.empty();
 
