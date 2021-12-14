@@ -11,6 +11,8 @@ import eu.xenit.nuntio.registry.consul.ConsulProperties.CheckProperties;
 import com.ecwid.consul.v1.ConsulClient;
 import com.ecwid.consul.v1.agent.model.NewCheck;
 import com.ecwid.consul.v1.agent.model.NewService;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -43,6 +45,22 @@ public class ConsulRegistry implements ServiceRegistry {
         );
     }
 
+    private String extractServiceAddress(RegistryServiceDescription description) {
+        return description.getAddress()
+                .filter(address -> {
+                    try {
+                        if(InetAddress.getByName(address).isAnyLocalAddress()) {
+                            return false;
+                        }
+                    } catch (UnknownHostException e) {
+                        log.error("Failed to determine if service {} address {} is a local address", description, address, e);
+                        return true;
+                    }
+                    return true;
+                })
+                .orElseGet(() -> consulClient.getAgentSelf().getValue().getMember().getAddress());
+    }
+
     @Override
     public RegistryServiceIdentifier registerService(RegistryServiceDescription description) {
         return registryMetrics.registerService(() -> {
@@ -55,7 +73,7 @@ public class ConsulRegistry implements ServiceRegistry {
             newService.setName(consulServiceIdentifier.getServiceName());
             newService.setId(consulServiceIdentifier.getServiceId());
 
-            description.getAddress().ifPresent(newService::setAddress);
+            newService.setAddress(extractServiceAddress(description));
             newService.setPort(Integer.parseInt(description.getPort()));
             newService.setTags(new ArrayList<>(description.getTags()));
             Map<String, String> metadata = new HashMap<>(description.getMetadata());

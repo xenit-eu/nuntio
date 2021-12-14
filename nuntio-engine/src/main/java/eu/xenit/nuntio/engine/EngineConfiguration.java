@@ -1,15 +1,20 @@
 package eu.xenit.nuntio.engine;
 
 import eu.xenit.nuntio.api.platform.ServicePlatform;
+import eu.xenit.nuntio.api.postprocessor.PlatformServicePostProcessor;
 import eu.xenit.nuntio.api.registry.ServiceRegistry;
 import eu.xenit.nuntio.engine.EngineProperties.AntiEntropyProperties;
 import eu.xenit.nuntio.engine.availability.AvailabilityManager;
 import eu.xenit.nuntio.engine.diff.DiffResolver;
+import eu.xenit.nuntio.engine.diff.DiffService;
 import eu.xenit.nuntio.engine.diff.InitialRegistrationResolver;
 import eu.xenit.nuntio.engine.metrics.LiveWatchMetrics;
 import eu.xenit.nuntio.engine.metrics.DiffOperationMetrics;
 import eu.xenit.nuntio.engine.metrics.MetricsFactory;
+import eu.xenit.nuntio.engine.postprocessor.RemoveDisabledAddressFamiliesPostProcessor;
+import eu.xenit.nuntio.engine.postprocessor.RemoveStoppedPlatformsPostProcessor;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.util.List;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -24,24 +29,40 @@ public class EngineConfiguration {
     }
 
     @Bean
-    AntiEntropyDaemon antiEntropyDaemon(ServicePlatform servicePlatform, ServiceRegistry serviceRegistry, DiffResolver diffResolver, MeterRegistry meterRegistry, EngineProperties engineProperties, AvailabilityManager availabilityManager) {
+    AntiEntropyDaemon antiEntropyDaemon(ServicePlatform servicePlatform, ServiceRegistry serviceRegistry, DiffService diffService, DiffResolver diffResolver, MeterRegistry meterRegistry, EngineProperties engineProperties, AvailabilityManager availabilityManager) {
         AntiEntropyProperties antiEntropyProperties = engineProperties.getAntiEntropy();
-        return new AntiEntropyDaemon(servicePlatform, serviceRegistry, diffResolver, new DiffOperationMetrics(meterRegistry, "anti-entropy"), antiEntropyProperties, availabilityManager);
+        return new AntiEntropyDaemon(servicePlatform, serviceRegistry, diffService, diffResolver, new DiffOperationMetrics(meterRegistry, "anti-entropy"), antiEntropyProperties, availabilityManager);
     }
 
     @Bean
-    LiveWatchDaemon liveWatchDaemon(ServicePlatform servicePlatform, ServiceRegistry serviceRegistry, DiffResolver diffResolver, MeterRegistry meterRegistry, EngineProperties engineProperties, AvailabilityManager availabilityManager) {
-        return new LiveWatchDaemon(servicePlatform, serviceRegistry, diffResolver, new LiveWatchMetrics(meterRegistry), engineProperties.getLive(), availabilityManager);
+    LiveWatchDaemon liveWatchDaemon(ServicePlatform servicePlatform, ServiceRegistry serviceRegistry, DiffService diffService, DiffResolver diffResolver, MeterRegistry meterRegistry, EngineProperties engineProperties, AvailabilityManager availabilityManager) {
+        return new LiveWatchDaemon(servicePlatform, serviceRegistry, diffService, diffResolver, new LiveWatchMetrics(meterRegistry), engineProperties.getLive(), availabilityManager);
     }
 
     @Bean
     PlatformServicesSynchronizer platformServicesRegistrar(ServicePlatform servicePlatform,
             ServiceRegistry registry,
+            DiffService diffService,
             DiffResolver diffResolver,
             InitialRegistrationResolver initialRegistrationResolver,
             MeterRegistry meterRegistry
             ) {
-        return new PlatformServicesSynchronizer(servicePlatform, registry, diffResolver, initialRegistrationResolver, new DiffOperationMetrics(meterRegistry, "sync"));
+        return new PlatformServicesSynchronizer(servicePlatform, registry, diffService, diffResolver, initialRegistrationResolver, new DiffOperationMetrics(meterRegistry, "sync"));
+    }
+
+    @Bean
+    PlatformServicePostProcessor removeStoppedPlatformsPostProcessor() {
+        return new RemoveStoppedPlatformsPostProcessor();
+    }
+
+    @Bean
+    PlatformServicePostProcessor removeDisabledAddressFamiliesPostProcessor(EngineProperties engineProperties) {
+        return new RemoveDisabledAddressFamiliesPostProcessor(engineProperties.getServiceAddress());
+    }
+
+    @Bean
+    DiffService diffService(List<PlatformServicePostProcessor> platformServicePostProcessorList) {
+        return new DiffService(platformServicePostProcessorList);
     }
 
     @Bean

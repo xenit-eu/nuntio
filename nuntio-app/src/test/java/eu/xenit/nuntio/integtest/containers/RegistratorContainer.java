@@ -50,7 +50,10 @@ public class RegistratorContainer extends GenericContainer<RegistratorContainer>
             commandParams.add("-explicit");
         }
 
+
         if(consulContainer != null) {
+            commandParams.add("-ip");
+            commandParams.add(consulContainer.getAdvertiseAddress());
             commandParams.add("consul://"+consulContainer.getNetworkAliases().get(0)+":"+consulContainer.getClientPort());
         }
         setCommandParts(commandParams.toArray(new String[0]));

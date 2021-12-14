@@ -7,7 +7,7 @@ import eu.xenit.nuntio.engine.EngineProperties.LiveWatchProperties;
 import eu.xenit.nuntio.engine.availability.AvailabilityManager;
 import eu.xenit.nuntio.engine.diff.AddService;
 import eu.xenit.nuntio.engine.diff.DiffResolver;
-import eu.xenit.nuntio.engine.diff.DiffUtil;
+import eu.xenit.nuntio.engine.diff.DiffService;
 import eu.xenit.nuntio.engine.diff.EqualService;
 import eu.xenit.nuntio.engine.diff.RemoveService;
 import eu.xenit.nuntio.engine.metrics.LiveWatchMetrics;
@@ -24,6 +24,7 @@ public class LiveWatchDaemon implements Runnable {
 
     private ServicePlatform platform;
     private ServiceRegistry registry;
+    private DiffService diffService;
     private DiffResolver diffResolver;
     private LiveWatchMetrics liveWatchMetrics;
     private LiveWatchProperties liveWatchProperties;
@@ -78,7 +79,7 @@ public class LiveWatchDaemon implements Runnable {
             case START:
                 platform.find(platformServiceEvent.getIdentifier())
                         .ifPresentOrElse(platformServiceDescription -> {
-                            DiffUtil.diff(Collections.emptySet(), Collections.singleton(platformServiceDescription))
+                            diffService.diff(Collections.emptySet(), Collections.singleton(platformServiceDescription))
                                     .filter(diff -> diff.cast(AddService.class).isPresent())
                                     .peek(liveWatchMetrics)
                                     .peek(diff -> {
@@ -96,7 +97,7 @@ public class LiveWatchDaemon implements Runnable {
                         .ifPresentOrElse(platformServiceDescription -> {
                             var registeredServices = registry.findAll(platformServiceDescription.getIdentifier().getPlatformIdentifier());
                             log.debug("Updating service information for platform {} on services {}", platformServiceDescription, registeredServices);
-                            DiffUtil.diff(registeredServices, Collections.singleton(platformServiceDescription))
+                            diffService.diff(registeredServices, Collections.singleton(platformServiceDescription))
                                     .filter(diff -> diff.cast(EqualService.class).isPresent())
                                     .peek(liveWatchMetrics)
                                     .forEach(diffResolver);
@@ -104,7 +105,7 @@ public class LiveWatchDaemon implements Runnable {
                 break;
             case STOP:
                 var registeredServices = registry.findAll(platformServiceEvent.getIdentifier().getPlatformIdentifier());
-                DiffUtil.diff(registeredServices, Collections.emptySet())
+                diffService.diff(registeredServices, Collections.emptySet())
                         .filter(diff -> diff.cast(RemoveService.class).isPresent())
                         .peek(liveWatchMetrics)
                         .peek(diff -> {

@@ -1,9 +1,10 @@
-package eu.xenit.nuntio.platform.docker.config.modifier;
+package eu.xenit.nuntio.engine.postprocessor;
 
-import com.github.dockerjava.api.command.InspectContainerResponse;
 import eu.xenit.nuntio.api.platform.PlatformServiceConfiguration;
+import eu.xenit.nuntio.api.platform.PlatformServiceDescription;
 import eu.xenit.nuntio.api.platform.ServiceBinding;
-import eu.xenit.nuntio.platform.docker.DockerProperties.AddressFamilies;
+import eu.xenit.nuntio.api.postprocessor.PlatformServicePostProcessor;
+import eu.xenit.nuntio.engine.EngineProperties.AddressFamilies;
 import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
@@ -15,15 +16,15 @@ import lombok.extern.slf4j.Slf4j;
 
 @AllArgsConstructor
 @Slf4j
-public class RemoveDisabledBindFamiliesAddressConfigurationModifier implements ServiceConfigurationModifier{
-    private AddressFamilies familiesToKeep;
+public class RemoveDisabledAddressFamiliesPostProcessor implements PlatformServicePostProcessor {
+    private final AddressFamilies familiesToKeep;
 
     private enum AddressType {
         IPV4,
         IPV6,
     }
 
-    private static Optional<AddressType> getAddressType(String ip) {
+    private Optional<AddressType> getAddressType(String ip) {
         try {
             InetAddress address = InetAddress.getByName(ip);
             if(address instanceof Inet4Address) {
@@ -49,22 +50,24 @@ public class RemoveDisabledBindFamiliesAddressConfigurationModifier implements S
     }
 
     @Override
-    public Stream<PlatformServiceConfiguration> modifyConfiguration(PlatformServiceConfiguration configuration,
-            InspectContainerResponse inspectContainerResponse) {
-        ServiceBinding serviceBinding = configuration.getServiceBinding();
+    public Stream<PlatformServiceConfiguration> process(PlatformServiceDescription serviceDescription,
+            PlatformServiceConfiguration serviceConfiguration) {
+
+        ServiceBinding serviceBinding = serviceConfiguration.getServiceBinding();
 
         Optional<AddressType> addressType = serviceBinding.getIp()
-                .flatMap(RemoveDisabledBindFamiliesAddressConfigurationModifier::getAddressType);
+                .flatMap(this::getAddressType);
 
         boolean shouldBeKept = addressType.map(this::shouldBeKept).orElse(false);
 
         if(shouldBeKept) {
             log.trace("Keeping address {} ({}) because it matches policy {}", serviceBinding.getIp(), addressType, familiesToKeep);
-            return Stream.of(configuration);
+            return Stream.of(serviceConfiguration);
         }
 
         log.debug("Removing address {} ({}) because it does not match policy {}", serviceBinding.getIp(), addressType, familiesToKeep);
 
         return Stream.empty();
+
     }
 }

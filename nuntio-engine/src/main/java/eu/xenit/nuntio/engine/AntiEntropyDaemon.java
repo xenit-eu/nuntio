@@ -8,7 +8,7 @@ import eu.xenit.nuntio.engine.EngineProperties.AntiEntropyProperties;
 import eu.xenit.nuntio.engine.availability.AvailabilityManager;
 import eu.xenit.nuntio.engine.diff.AddService;
 import eu.xenit.nuntio.engine.diff.DiffResolver;
-import eu.xenit.nuntio.engine.diff.DiffUtil;
+import eu.xenit.nuntio.engine.diff.DiffService;
 import eu.xenit.nuntio.engine.diff.RemoveService;
 import eu.xenit.nuntio.engine.metrics.DiffOperationMetrics;
 import java.time.Duration;
@@ -25,6 +25,7 @@ public class AntiEntropyDaemon implements SchedulingConfigurer {
 
     private ServicePlatform platform;
     private ServiceRegistry registry;
+    private DiffService diffService;
     private DiffResolver diffResolver;
     private DiffOperationMetrics antiEntropyMetrics;
     private AntiEntropyProperties antiEntropyProperties;
@@ -37,7 +38,7 @@ public class AntiEntropyDaemon implements SchedulingConfigurer {
             Set<? extends RegistryServiceIdentifier> registryServiceIdentifiers = registry.findServices();
             Set<? extends PlatformServiceDescription> platformServiceDescriptions = platform.findAll();
 
-            DiffUtil.diff(registryServiceIdentifiers, platformServiceDescriptions)
+            diffService.diff(registryServiceIdentifiers, platformServiceDescriptions)
                     .peek(antiEntropyMetrics)
                     .peek(diff -> {
                         diff.cast(AddService.class).ifPresent(addService -> {

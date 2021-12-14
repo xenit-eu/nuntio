@@ -13,6 +13,8 @@ public class EngineProperties {
 
     ShutdownMode shutdownMode = ShutdownMode.UNREGISTER_CHECKS;
 
+    AddressFamilies serviceAddress = new AddressFamilies();
+
     @Data
     public static class LiveWatchProperties {
 
@@ -40,5 +42,11 @@ public class EngineProperties {
         UNREGISTER_HEARTBEAT,
         UNREGISTER_CHECKS,
         NOTHING
+    }
+
+    @Data
+    public static class AddressFamilies {
+        private boolean ipv4 = true;
+        private boolean ipv6 = true;
     }
 }

@@ -4,7 +4,7 @@ import eu.xenit.nuntio.api.platform.ServicePlatform;
 import eu.xenit.nuntio.api.registry.ServiceRegistry;
 import eu.xenit.nuntio.engine.diff.AddService;
 import eu.xenit.nuntio.engine.diff.DiffResolver;
-import eu.xenit.nuntio.engine.diff.DiffUtil;
+import eu.xenit.nuntio.engine.diff.DiffService;
 import eu.xenit.nuntio.engine.diff.InitialRegistrationResolver;
 import eu.xenit.nuntio.engine.diff.RemoveService;
 import eu.xenit.nuntio.engine.metrics.DiffOperationMetrics;
@@ -17,12 +17,13 @@ public class PlatformServicesSynchronizer {
 
     private final ServicePlatform platform;
     private final ServiceRegistry registry;
+    private final DiffService diffService;
     private final DiffResolver diffResolver;
     private final InitialRegistrationResolver initialRegistrationResolver;
     private final DiffOperationMetrics syncMetrics;
 
     public void syncServices() {
-        DiffUtil.diff(registry.findServices(), platform.findAll())
+        diffService.diff(registry.findServices(), platform.findAll())
                 .peek(syncMetrics)
                 .peek(diff -> {
                     diff.cast(AddService.class).ifPresent(addService -> {

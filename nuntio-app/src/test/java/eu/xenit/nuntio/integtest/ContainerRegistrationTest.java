@@ -2,16 +2,25 @@ package eu.xenit.nuntio.integtest;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.emptyCollectionOf;
-import static org.hamcrest.Matchers.emptyString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.oneOf;
 import static org.hamcrest.Matchers.startsWith;
+import static org.junit.Assume.assumeThat;
 
+import com.ecwid.consul.v1.ConsulClient;
+import com.ecwid.consul.v1.catalog.CatalogServiceRequest;
+import com.ecwid.consul.v1.catalog.CatalogServicesRequest;
+import com.ecwid.consul.v1.catalog.model.CatalogService;
+import com.github.dockerjava.api.DockerClient;
+import com.github.dockerjava.api.command.CreateContainerResponse;
+import com.github.dockerjava.api.model.ExposedPort;
+import com.github.dockerjava.api.model.Ports.Binding;
 import eu.xenit.nuntio.integtest.containers.NuntioContainer;
 import eu.xenit.nuntio.integtest.containers.RegistrationContainer;
 import eu.xenit.nuntio.integtest.containers.RegistratorContainer;
@@ -20,14 +29,8 @@ import eu.xenit.nuntio.integtest.jupiter.annotations.ContainerTests;
 import eu.xenit.nuntio.integtest.jupiter.annotations.NuntioTest;
 import eu.xenit.nuntio.integtest.util.SimpleContainerInspect;
 import eu.xenit.nuntio.integtest.util.SimpleContainerModifier;
-import com.ecwid.consul.v1.ConsulClient;
-import com.ecwid.consul.v1.catalog.CatalogServiceRequest;
-import com.ecwid.consul.v1.catalog.CatalogServicesRequest;
-import com.github.dockerjava.api.DockerClient;
-import com.github.dockerjava.api.command.CreateContainerResponse;
-import com.github.dockerjava.api.model.ExposedPort;
-import com.github.dockerjava.api.model.Ports.Binding;
 import java.util.Collections;
+import java.util.stream.Collectors;
 import org.hamcrest.Matcher;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -91,7 +94,7 @@ public class ContainerRegistrationTest extends ContainerBaseTest {
 
         var inspect = new SimpleContainerInspect(dockerClient.inspectContainerCmd(myServiceContainer.getId()).exec());
         var mappedPort = inspect.findSingleContainerBinding(ExposedPort.tcp(123)).getHostPortSpec();
-        Matcher<String> serviceAddressMatcher = anyOf(equalTo("127.0.0.1"), emptyString());
+        Matcher<String> serviceAddressMatcher = equalTo("127.0.0.1");
 
         if(container.isInternalPorts()) {
             serviceAddressMatcher = equalTo(inspect.findInternalIps().get("bridge"));
@@ -115,6 +118,37 @@ public class ContainerRegistrationTest extends ContainerBaseTest {
             assertThat(catalogServices, not(hasKey("alpine")));
         } else {
             assertThat(catalogServices, hasKey("alpine"));
+        }
+    }
+
+    @CompatTest
+    void ipv6Mapping(DockerClient dockerClient, ConsulClient consulClient, RegistrationContainer container) {
+        assumeThat("Ipv6 mapping only works for exposed ports", container.isInternalPorts(), equalTo(false));
+        CreateContainerResponse myServiceContainer = createContainer(
+                SimpleContainerModifier.withPortBinding(ExposedPort.tcp(123), Binding.bindIpAndPort("0.0.0.0", 1123))
+                        .andThen(SimpleContainerModifier.withPortBinding(ExposedPort.tcp(123), Binding.bindIpAndPort("::", 2123)))
+                        .andThen(SimpleContainerModifier.withPortBinding(ExposedPort.tcp(124), Binding.bindIpAndPort("::", 2124)))
+                        .andThen(SimpleContainerModifier.withPortBinding(ExposedPort.tcp(125), Binding.bindIpAndPort("0.0.0.0", 1125)))
+                        .andThen(SimpleContainerModifier.withLabel("SERVICE_123_NAME", "myservice"))
+                        .andThen(SimpleContainerModifier.withLabel("SERVICE_124_NAME", "myservice"))
+                        .andThen(SimpleContainerModifier.withLabel("SERVICE_125_NAME", "myservice"))
+        );
+
+
+        dockerClient.startContainerCmd(myServiceContainer.getId()).exec();
+
+        await.until(consulWaiter().serviceExists("myservice"));
+
+        var myserviceInstances = consulClient.getCatalogService("myservice", CatalogServiceRequest.newBuilder().build())
+                .getValue();
+
+        var servicePorts = myserviceInstances.stream().map(CatalogService::getServicePort).collect(Collectors.toList());
+        if(container instanceof RegistratorContainer) {
+            // Which one of the 2 binds for port 123 is mapped is pure luck with registrator
+            assertThat(servicePorts, containsInAnyOrder(equalTo(2124), equalTo(1125), oneOf(1123, 2123)));
+        } else {
+            // In nuntio, all ports are properly mapped
+            assertThat(servicePorts, containsInAnyOrder(equalTo(2124), equalTo(1125), equalTo(1123), equalTo(2123)));
         }
     }
 

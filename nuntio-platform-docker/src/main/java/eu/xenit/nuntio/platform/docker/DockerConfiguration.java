@@ -6,8 +6,6 @@ import eu.xenit.nuntio.platform.docker.actuators.DockerHealthIndicator;
 import eu.xenit.nuntio.platform.docker.config.modifier.ExpandAnyBindingConfigurationModifier;
 import eu.xenit.nuntio.platform.docker.config.modifier.InternalNetworkConfigurationModifier;
 import eu.xenit.nuntio.platform.docker.config.modifier.PublishedPortConfigurationModifier;
-import eu.xenit.nuntio.platform.docker.config.modifier.RemoveAnyLocalAddressConfigurationModifier;
-import eu.xenit.nuntio.platform.docker.config.modifier.RemoveDisabledBindFamiliesAddressConfigurationModifier;
 import eu.xenit.nuntio.platform.docker.config.modifier.ServiceConfigurationModifier;
 import eu.xenit.nuntio.platform.docker.config.parser.NullServiceConfigurationParser;
 import eu.xenit.nuntio.platform.docker.config.parser.NuntioLabelsParser;
@@ -118,18 +116,6 @@ public class DockerConfiguration {
             return new PublishedPortConfigurationModifier();
         }
         return null;
-    }
-
-    @Bean
-    @Order(Ordered.HIGHEST_PRECEDENCE + 200)
-    ServiceConfigurationModifier removeDisabledBindFamiliesConfigurationModifier(DockerProperties dockerProperties) {
-        return new RemoveDisabledBindFamiliesAddressConfigurationModifier(dockerProperties.getAddressFamily());
-    }
-
-    @Bean
-    @Order(Ordered.LOWEST_PRECEDENCE - 100)
-    ServiceConfigurationModifier removeAnyLocalAddressConfigurationModifier() {
-        return new RemoveAnyLocalAddressConfigurationModifier();
     }
 
     @Bean
