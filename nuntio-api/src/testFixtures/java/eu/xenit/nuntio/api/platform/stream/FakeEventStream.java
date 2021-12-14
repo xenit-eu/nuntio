@@ -1,6 +1,5 @@
-package eu.xenit.nuntio.api;
+package eu.xenit.nuntio.api.platform.stream;
 
-import eu.xenit.nuntio.api.platform.stream.EventStream;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.LinkedTransferQueue;
