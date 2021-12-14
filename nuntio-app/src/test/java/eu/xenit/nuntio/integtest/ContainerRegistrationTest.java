@@ -137,6 +137,8 @@ public class ContainerRegistrationTest extends ContainerBaseTest {
 
         dockerClient.startContainerCmd(myServiceContainer.getId()).exec();
 
+        waitForFullCycle();
+
         await.until(consulWaiter().serviceExists("myservice"));
 
         var myserviceInstances = consulClient.getCatalogService("myservice", CatalogServiceRequest.newBuilder().build())

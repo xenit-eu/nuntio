@@ -82,6 +82,7 @@ public abstract class ContainerBaseTest {
         CreateContainerResponse markerContainer = createContainer(
                 SimpleContainerModifier.withPortBinding(ExposedPort.tcp(80), Binding.empty())
                         .andThen(SimpleContainerModifier.withLabel("nuntio.xenit.eu/service", "marker"))
+                        .andThen(SimpleContainerModifier.withLabel("SERVICE_NAME", "marker"))
         );
         DockerClient dockerClient = dindContainer.getDindClient();
         dockerClient.startContainerCmd(markerContainer.getId()).exec();
