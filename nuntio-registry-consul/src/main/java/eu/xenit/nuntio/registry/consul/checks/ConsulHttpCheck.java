@@ -51,6 +51,7 @@ public class ConsulHttpCheck extends ConsulRemoteCheck
         check.setMethod(method);
         check.setHeader(headers);
         check.setHttp(scheme.getScheme()+"://"+host.toHost()+"/"+ path);
+        check.setNotes(check.getMethod()+" "+check.getHttp());
     }
 
     public static class HttpCheckFactory extends RemoteCheckFactory<ConsulHttpCheck> {
@@ -69,7 +70,7 @@ public class ConsulHttpCheck extends ConsulRemoteCheck
         @Override
         protected void initializeCheck(ConsulHttpCheck check, Map<String, String> options) {
             super.initializeCheck(check, options);
-            check.setMethod(options.get("method"));
+            check.setMethod(options.getOrDefault("method", "GET"));
             check.setPath(options.getOrDefault("path", "/"));
             check.setScheme(HttpCheckScheme.ofScheme(options.getOrDefault("scheme", HttpCheckScheme.HTTP.getScheme())));
         }

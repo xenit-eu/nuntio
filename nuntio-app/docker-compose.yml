@@ -8,6 +8,11 @@ services:
       NUNTIO_CONSUL_HOST: consul
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+    labels:
+      nuntio.xenit.eu/service: nuntio
+      nuntio.xenit.eu/check/readiness/type: http
+      nuntio.xenit.eu/check/readiness/interval: 30s
+      nuntio.xenit.eu/check/readiness/path: /actuator/health/readiness
 
   consul:
     image: docker.io/library/consul:latest

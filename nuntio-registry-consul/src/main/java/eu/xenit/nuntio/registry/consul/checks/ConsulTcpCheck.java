@@ -17,6 +17,7 @@ public class ConsulTcpCheck extends ConsulRemoteCheck {
     protected void initializeCheck(ConsulServiceIdentifier serviceIdentifier,
             RegistryServiceDescription serviceDescription, IpAndPort host, NewCheck check) {
         check.setTcp(host.toHost());
+        check.setNotes(check.getTcp());
     }
 
     public static class TcpCheckFactory extends RemoteCheckFactory<ConsulTcpCheck> {

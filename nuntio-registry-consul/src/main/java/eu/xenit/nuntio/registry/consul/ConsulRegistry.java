@@ -99,7 +99,7 @@ public class ConsulRegistry implements ServiceRegistry {
                 try {
                     log.trace("Registering check {}", newCheck);
                     consulClient.agentCheckRegister(newCheck, consulConfig.getToken());
-                    log.trace("Registered check {}", newCheck);
+                    log.debug("Registered check {}", newCheck);
                 } catch(OperationException e) {
                     log.error("Failed to register check {}. Unregistering service and failing registration attempt.", newCheck, e);
                     unregisterService(consulServiceIdentifier);

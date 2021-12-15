@@ -27,6 +27,7 @@ public abstract class ConsulRemoteCheck extends AbstractConsulCheck {
         NewCheck check = super.createCheck(serviceIdentifier, registryServiceDescription);
         check.setInterval(interval);
         check.setTimeout(timeout);
+        check.setNotes(check.getNotes()+" (interval="+check.getInterval()+"; timeout="+check.getTimeout()+")");
         return check;
     }
 
