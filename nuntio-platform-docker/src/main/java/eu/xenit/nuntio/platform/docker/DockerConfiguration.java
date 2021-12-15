@@ -1,5 +1,6 @@
 package eu.xenit.nuntio.platform.docker;
 
+import eu.xenit.nuntio.api.checks.ServiceCheckFactory;
 import eu.xenit.nuntio.api.platform.metrics.PlatformMetricsFactory;
 import eu.xenit.nuntio.platform.docker.DockerProperties.PortBindConfiguration;
 import eu.xenit.nuntio.platform.docker.actuators.DockerHealthIndicator;
@@ -70,9 +71,9 @@ public class DockerConfiguration {
     }
 
     @Bean
-    ServiceConfigurationParser nuntioLabelsParser(DockerProperties dockerProperties) {
+    ServiceConfigurationParser nuntioLabelsParser(DockerProperties dockerProperties, ServiceCheckFactory serviceCheckFactory) {
         if(dockerProperties.getNuntioLabel().isEnabled()) {
-            return new NuntioLabelsParser(dockerProperties.getNuntioLabel().getPrefix());
+            return new NuntioLabelsParser(dockerProperties.getNuntioLabel().getPrefix(), serviceCheckFactory);
         }
         return new NullServiceConfigurationParser();
     }
@@ -87,9 +88,9 @@ public class DockerConfiguration {
 
     @Bean
     @Primary
-    ServiceConfigurationParser switchingServiceConfigurationParser(DockerProperties dockerProperties) {
+    ServiceConfigurationParser switchingServiceConfigurationParser(DockerProperties dockerProperties, ServiceCheckFactory serviceCheckFactory) {
         return new SwitchingServiceConfigurationParser(Arrays.asList(
-                nuntioLabelsParser(dockerProperties),
+                nuntioLabelsParser(dockerProperties, serviceCheckFactory),
                 registratorCompatibleParser(dockerProperties)
         ));
     }

@@ -1,8 +1,13 @@
 package eu.xenit.nuntio.registry.consul;
 
+import com.ecwid.consul.v1.ConsulClient;
+import eu.xenit.nuntio.api.checks.ServiceCheckFactory;
 import eu.xenit.nuntio.api.registry.metrics.RegistryMetricsFactory;
 import eu.xenit.nuntio.registry.consul.actuators.ConsulHealthIndicator;
-import com.ecwid.consul.v1.ConsulClient;
+import eu.xenit.nuntio.registry.consul.checks.ConsulCheckFactory;
+import eu.xenit.nuntio.registry.consul.checks.ConsulHttpCheck.HttpCheckFactory;
+import eu.xenit.nuntio.registry.consul.checks.ConsulTcpCheck.TcpCheckFactory;
+import java.util.Arrays;
 import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -27,6 +32,14 @@ public class ConsulConfiguration {
     @Bean
     ConsulRegistry consulRegistry(ConsulClient consulClient, RegistryMetricsFactory metricsFactory, ConsulProperties consulProperties) {
         return new ConsulRegistry(consulClient, consulProperties, metricsFactory.createRegistryMetrics("consul"));
+    }
+
+    @Bean
+    ServiceCheckFactory consulCheckFactory() {
+        return new ConsulCheckFactory(Arrays.asList(
+                new HttpCheckFactory(),
+                new TcpCheckFactory()
+        ));
     }
 
     @Bean

@@ -1,5 +1,6 @@
 package eu.xenit.nuntio.platform.docker.config.parser;
 
+import eu.xenit.nuntio.api.checks.ServiceCheckFactory;
 import eu.xenit.nuntio.api.platform.PlatformServiceConfiguration;
 import eu.xenit.nuntio.api.platform.ServiceBinding;
 import java.util.Arrays;
@@ -9,9 +10,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.regex.MatchResult;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -34,9 +38,11 @@ import lombok.extern.slf4j.Slf4j;
  * * nuntio/udp:65/metadata/my-metadata
  */
 @Slf4j
+@AllArgsConstructor
 public class NuntioLabelsParser implements ServiceConfigurationParser {
 
     private final String labelPrefix;
+    private final ServiceCheckFactory serviceCheckFactory;
 
     private static final Pattern LABEL_WITHOUT_ADDITIONAL_PATTERN;
     private static final Pattern LABEL_WITH_ADDITIONAL_PATTERN;
@@ -62,10 +68,6 @@ public class NuntioLabelsParser implements ServiceConfigurationParser {
                         Collectors.joining("|"));
     }
 
-    public NuntioLabelsParser(String labelPrefix) {
-        this.labelPrefix = labelPrefix;
-    }
-
     @Override
     public Set<PlatformServiceConfiguration> toServiceConfigurations(ContainerMetadata containerMetadata) {
         var bindingsWithConfiguration = parseContainerMetadata(containerMetadata)
@@ -84,7 +86,24 @@ public class NuntioLabelsParser implements ServiceConfigurationParser {
                     .map(Util::splitByComma)
                     .orElse(Collections.emptyList());
             var metadata = findLabelsOfType(bindingListEntry.getValue(), ConfigurationKind.METADATA)
-                    .collect(Collectors.toMap(entry -> entry.getKey().getAdditional(), Entry::getValue));
+                    .collect(Collectors.toMap(entry -> entry.getKey().getAdditional().get("metadataKey"), Entry::getValue));
+            var checks = findLabelsOfType(bindingListEntry.getValue(), ConfigurationKind.CHECK)
+                    .map(NuntioLabelsParser::createServiceCheckConfiguration)
+                    .collect(Collectors.toMap(ServiceCheckConfiguration::key, Function.identity(), NuntioLabelsParser::mergeServiceCheckConfigurations))
+                    .values()
+                    .stream()
+                    // Then only retain the ones with the required "type" option set
+                    .filter(serviceCheckConfiguration -> serviceCheckConfiguration.getOptions().containsKey("type"))
+                    .map(serviceCheckConfiguration -> {
+                        Map<String, String> checkOptions = new HashMap<>(serviceCheckConfiguration.getOptions());
+                        String type = checkOptions.remove("type");
+                        return serviceCheckFactory.createCheck(
+                                type,
+                                serviceCheckConfiguration.getName(),
+                                checkOptions
+                        );
+                    })
+                    .collect(Collectors.toSet());
 
             if (services.isEmpty()) {
                 log.warn("Binding {} is missing a service but has other configurations.",
@@ -100,6 +119,7 @@ public class NuntioLabelsParser implements ServiceConfigurationParser {
                             .serviceNames(service)
                             .serviceTags(tags)
                             .serviceMetadata(metadata)
+                            .checks(checks)
                             .build()
                     ).ifPresent(serviceConfigurations::add);
         }
@@ -132,9 +152,12 @@ public class NuntioLabelsParser implements ServiceConfigurationParser {
         Matcher labelWithAdditionalMatch = LABEL_WITH_ADDITIONAL_PATTERN.matcher(withoutPrefix);
         if (labelWithAdditionalMatch.matches()) {
             return LabelKind.find(labelWithAdditionalMatch.group("labelKind"))
-                    .map(labelKind -> new ParsedServiceConfiguration(labelKind.getConfigurationKind(),
-                            createServiceBindingFromMatch(labelWithAdditionalMatch),
-                            labelWithAdditionalMatch.group("labelAdditional")));
+                    .flatMap(labelKind -> labelKind.matchAdditional(labelWithAdditionalMatch.group("labelAdditional"))
+                            .map(additionalMatch ->
+                                    new ParsedServiceConfiguration(labelKind.getConfigurationKind(),
+                                            createServiceBindingFromMatch(labelWithAdditionalMatch),
+                                            additionalMatch)
+                            ));
         }
         return Optional.empty();
     }
@@ -156,19 +179,20 @@ public class NuntioLabelsParser implements ServiceConfigurationParser {
 
     @AllArgsConstructor
     private enum LabelKind {
-        SERVICE("service", false, ConfigurationKind.SERVICE),
-        TAGS("tags", false, ConfigurationKind.TAGS),
-        METADATA("metadata", true, ConfigurationKind.METADATA),
+        SERVICE("service",  ConfigurationKind.SERVICE, null, null),
+        TAGS("tags",  ConfigurationKind.TAGS, null, null),
+        METADATA("metadata", ConfigurationKind.METADATA, Pattern.compile("^(?<metadataKey>.+)$"), new String[]{"metadataKey"}),
+        CHECKS("check",  ConfigurationKind.CHECK,
+                Pattern.compile("^(?<checkName>[a-z0-9\\-_]+)/(?<option>[a-z\\-_]+)$"), new String[] {"checkName", "option"}),
         ;
 
         @Getter(value = AccessLevel.PRIVATE)
         private final String identifier;
 
         @Getter(value = AccessLevel.PRIVATE)
-        private final boolean acceptsAdditional;
-
-        @Getter(value = AccessLevel.PRIVATE)
         private final ConfigurationKind configurationKind;
+        private final Pattern additionalPattern;
+        private final String[] groups;
 
         private static Optional<LabelKind> find(String identifier) {
             for (LabelKind configurationKind : values()) {
@@ -177,6 +201,18 @@ public class NuntioLabelsParser implements ServiceConfigurationParser {
                 }
             }
             return Optional.empty();
+        }
+
+        public boolean isAcceptsAdditional() {
+            return additionalPattern != null;
+        }
+
+        public Optional<Map<String, String>> matchAdditional(String additional) {
+            return Optional.of(additionalPattern.matcher(additional))
+                    .filter(Matcher::matches)
+                    .map(matcher -> Arrays.stream(groups)
+                            .collect(Collectors.toMap(Function.identity(), matcher::group))
+                    );
         }
     }
 
@@ -191,20 +227,54 @@ public class NuntioLabelsParser implements ServiceConfigurationParser {
     }
 
     @Value
-    private class ParsedServiceConfiguration {
-
+    private static class ParsedServiceConfiguration {
         ConfigurationKind configurationKind;
         ServiceBinding binding;
-        String additional;
-
-
+        Map<String, String> additional;
     }
 
     private enum ConfigurationKind {
         SERVICE,
         TAGS,
-        METADATA
+        METADATA,
+        CHECK;
     }
 
+    @Value
+    private static class ServiceCheckConfiguration {
+        String name;
+        ServiceBinding serviceBinding;
+        Map<String, String> options;
+
+        ServiceCheckConfigurationKey key() {
+            return new ServiceCheckConfigurationKey(name, serviceBinding);
+        }
+    }
+
+    @Value
+    private static class ServiceCheckConfigurationKey {
+        String name;
+        ServiceBinding serviceBinding;
+    }
+
+    private static ServiceCheckConfiguration createServiceCheckConfiguration(Entry<ParsedServiceConfiguration, String> entry) {
+        return new ServiceCheckConfiguration(
+                entry.getKey().getAdditional().get("checkName"),
+                entry.getKey().getBinding(),
+                Collections.singletonMap(entry.getKey().getAdditional().get("option"), entry.getValue())
+        );
+    }
+
+    private static ServiceCheckConfiguration mergeServiceCheckConfigurations(ServiceCheckConfiguration c1, ServiceCheckConfiguration c2) {
+        if(!Objects.equals(c1.key(), c2.key())) {
+            throw new IllegalArgumentException("Merging 2 unrelated check configurations is not supported.");
+        }
+
+        Map<String, String> mergedMap = new HashMap<>(c1.getOptions().size()+c2.getOptions().size());
+        mergedMap.putAll(c1.getOptions());
+        mergedMap.putAll(c2.getOptions());
+
+        return new ServiceCheckConfiguration(c1.getName(), c1.getServiceBinding(), mergedMap);
+    }
 
 }

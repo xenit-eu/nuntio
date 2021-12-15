@@ -1,5 +1,6 @@
 package eu.xenit.nuntio.api.platform;
 
+import eu.xenit.nuntio.api.checks.ServiceCheck;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -28,6 +29,8 @@ public class PlatformServiceConfiguration {
     Map<String, String> serviceMetadata;
     @Singular("internalMetadata")
     Map<String, String> internalMetadata;
+    @Singular("check")
+    Set<ServiceCheck> checks;
 
 
     public PlatformServiceConfiguration( ServiceBinding serviceBinding, Set<String> serviceNames,
@@ -37,7 +40,8 @@ public class PlatformServiceConfiguration {
                 Collections.unmodifiableSet(serviceNames),
                 Collections.unmodifiableSet(serviceTags),
                 Collections.unmodifiableMap(serviceMetadata),
-                Collections.emptyMap()
+                Collections.emptyMap(),
+                Collections.emptySet()
         );
     }
 

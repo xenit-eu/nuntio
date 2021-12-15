@@ -21,6 +21,7 @@ Nuntio uses a couple of abstract concepts throughout its code and documentation.
 <dt>Platform Service</dt><dd>A platform service is the application as seen by the Service Platform. Since a process can listen on multiple ports, it can contain multiple individual Services.</dd>
 <dt>Registry Service</dt><dd>A registry service is the service as stored in the Service Registry. It maps to exactly one Service.</dd>
 <dt>Check</dt><dd>A check is a component that checks the health of a Service. Checks can be handled by the Service Registry itself, or in Nuntio if the Service Registry does not support a check type.</dd>
+<dt>Check Factory</dt><dd>A check factory creates Checks for a Service based on configuration. There are different kinds of checks possible, some can be handled by the Service Registry, other types can be handled by Nuntio.</dd>
 </dl>
 
 ![Architecture overview](nuntio-architecture.drawio.svg)
@@ -164,6 +165,8 @@ The labels follow these formats:
  * `<prefix>/service`: Comma-separated service names to use for this service. Required to be able to register a service.
  * `<prefix>/tags`: Comma-separated tag names to register with this service.
  * `<prefix>/metadata/<key>`: Metadata value to register with this service.
+ * `<prefix>/check/<id>/<option>`: Configuration for checks to register with this service. 
+   Note that a Check needs at least a `type` option to be valid *and* the type must be supported by a Check Factory.
 
 Label examples
 
@@ -171,6 +174,7 @@ Label examples
  * `nuntio.xenit.eu/80/service=lb-front`: Port `80/tcp` of the container is registered under `lb-front`
  * `nuntio.xenit.eu/udp:53/tags=authoritative`: The services for port `53/udp` of the container will have the `authoritative` tag
  * `nuntio.xenit.eu/metadata/my-key=interesting-value`: The services for all ports of the container will have metadata value `my-key=interesting-value`
+ * `nuntio.xenit.eu/check/poke/type=tcp`: Adds a check with id `poke` and option `type=tcp`
 
 Some concrete examples:
 
@@ -184,6 +188,7 @@ services:
         nuntio.xenit.eu/service: db
         nuntio.xenit.eu/tags: primary
         nuntio.xenit.eu/metadata/hosted-dbs: metrics,users
+        nuntio.xenit.eu/check/poke/type: tcp
    db2:
      image: postgres
      ports:
@@ -192,6 +197,7 @@ services:
        nuntio.xenit.eu/5432/service: db,db-analytics
        nuntio.xenit.eu/5432/tags: secondary
        nuntio.xenit.eu/5432/metadata/hosted-dbs: metrics,users
+       nuntio.xenit.eu/5432/check/poke/type: tcp
    app:
      image: my-app:latest
      ports:
@@ -203,6 +209,9 @@ services:
        nuntio.xenit.eu/8080/metadata/published-domain: my-awesome-app.example
        nuntio.xenit.eu/8081/service: app-admin
        nuntio.xenit.eu/metadata/prometheus-scrape: /metrics/prometheus
+       nuntio.xenit.eu/8081/check/readiness/type: http
+       nuntio.xenit.eu/8081/check/readiness/url: /actuator/health/readiness
+       nuntio.xenit.eu/8081/check/readiness/method: GET
    custom-dns:
       image: my-dns-server:latest
       ports:
@@ -214,14 +223,14 @@ services:
 This will register the following services:
 
  * `db` 
-   * instance db1: `ServicePort=1234 Tags=primary Meta[hosted-dbs]=metrics,users`
-   * instance db2: `ServicePort=1235 Tags=secondary Meta[hosted-dbs]=metrics,users`
+   * instance db1: `ServicePort=1234 Tags=primary Meta[hosted-dbs]=metrics,users Check[poke]=TCP:[mapped IP & port for 1234]`
+   * instance db2: `ServicePort=1235 Tags=secondary Meta[hosted-dbs]=metrics,users Check[poke]=TCP:[mapped IP & port for 1234]`
  * `db-analytics`
-   * instance db2: `ServicePort=1235 Tags=secondary Meta[hosted-dbs]=metrics,users`
+   * instance db2: `ServicePort=1235 Tags=secondary Meta[hosted-dbs]=metrics,users Check [poke]=TCP:[mapped IP & port for 1234]`
  * `app-public`
    * instance app: `ServicePort=[mapped port for 8080] Meta[published-domain]=my-awesome-app.example Meta[prometheus-scrape]=/metrics/prometheus`
  * `app-admin`
-   * instance app: `ServicePort=[mapped port for 8081] Meta[prometheus-scrape]=/metrics/prometheus`
+   * instance app: `ServicePort=[mapped port for 8081] Meta[prometheus-scrape]=/metrics/prometheus Check[readiness]=HTTP:GET [mapped IP & port for 8081]/actuator/health/readiness`
  * `dns`
    * instance custom-dns: `ServiceIp=10.5.2.1 ServicePort=53`  
  
@@ -289,6 +298,56 @@ The Consul registry supports registering services to Consul.
 * healthcheck: <code>null</code>
 
 </td><td>Time before a critical check deregisters the service.</td>
+</tr>
+</tbody>
+</table>
+
+### Consul checks
+
+The consul Service Registry has a Check Factory that can create checks for the following types.
+Check types are supported with and without `consul:` prefix.
+
+Some Check types have mandatory options that will result in an error when they are not set.
+
+<table>
+<thead>
+<tr>
+<th>Check type</th>
+<th>Option</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>tcp</code>, <code>http</code></td>
+<td><code>interval</code></td>
+<td><em>Required</em></td>
+<td>Interval between check attempts</td>
+</tr>
+<tr>
+<td><code>tcp</code>, <code>http</code></td>
+<td><code>timeout</code></td>
+<td><code>10s</code></td>
+<td>Timeout before the connection is considered failed</td>
+</tr>
+<tr>
+<td><code>http</code></td>
+<td><code>scheme</code></td>
+<td><code>http</code></td>
+<td>Scheme to use for HTTP check (<code>http</code> or <code>https</code>)</td>
+</tr>
+<tr>
+<td><code>http</code></td>
+<td><code>method</code></td>
+<td><code>GET</code></td>
+<td>HTTP method to use for the HTTP check</td>
+</tr>
+<tr>
+<td><code>http</code></td>
+<td><code>path</code></td>
+<td><code>/</code></td>
+<td>Path to use for the HTTP check</td>
 </tr>
 </tbody>
 </table>

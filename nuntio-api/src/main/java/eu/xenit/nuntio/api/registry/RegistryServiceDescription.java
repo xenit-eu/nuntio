@@ -1,5 +1,6 @@
 package eu.xenit.nuntio.api.registry;
 
+import eu.xenit.nuntio.api.checks.ServiceCheck;
 import eu.xenit.nuntio.api.identifier.PlatformIdentifier;
 import eu.xenit.nuntio.api.identifier.ServiceIdentifier;
 import java.util.Map;
@@ -30,4 +31,7 @@ public class RegistryServiceDescription {
     Set<String> tags;
     @Singular("metadata")
     Map<String, String> metadata;
+
+    @Singular
+    Set<ServiceCheck> checks;
 }

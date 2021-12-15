@@ -1,5 +1,9 @@
 package eu.xenit.nuntio.registry.consul;
 
+import com.ecwid.consul.v1.ConsulClient;
+import com.ecwid.consul.v1.OperationException;
+import com.ecwid.consul.v1.agent.model.NewCheck;
+import com.ecwid.consul.v1.agent.model.NewService;
 import eu.xenit.nuntio.api.identifier.ServiceIdentifier;
 import eu.xenit.nuntio.api.registry.CheckStatus;
 import eu.xenit.nuntio.api.registry.CheckType;
@@ -8,9 +12,7 @@ import eu.xenit.nuntio.api.registry.RegistryServiceIdentifier;
 import eu.xenit.nuntio.api.registry.ServiceRegistry;
 import eu.xenit.nuntio.api.registry.metrics.RegistryMetrics;
 import eu.xenit.nuntio.registry.consul.ConsulProperties.CheckProperties;
-import com.ecwid.consul.v1.ConsulClient;
-import com.ecwid.consul.v1.agent.model.NewCheck;
-import com.ecwid.consul.v1.agent.model.NewService;
+import eu.xenit.nuntio.registry.consul.checks.ConsulCheck;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -85,6 +87,26 @@ public class ConsulRegistry implements ServiceRegistry {
             log.trace("Consul service object: {}", newService);
             consulClient.agentServiceRegister(newService, consulConfig.getToken());
             log.debug("Registered service {}", description);
+
+
+            Set<NewCheck> checks = description.getChecks()
+                    .stream()
+                    .filter(check -> check instanceof ConsulCheck)
+                    .map(check -> ((ConsulCheck) check).createCheck(consulServiceIdentifier, description))
+                    .collect(Collectors.toSet());
+            log.trace("Consul check objects: {}", checks);
+            for (NewCheck newCheck : checks) {
+                try {
+                    log.trace("Registering check {}", newCheck);
+                    consulClient.agentCheckRegister(newCheck, consulConfig.getToken());
+                    log.trace("Registered check {}", newCheck);
+                } catch(OperationException e) {
+                    log.error("Failed to register check {}. Unregistering service and failing registration attempt.", newCheck, e);
+                    unregisterService(consulServiceIdentifier);
+                    throw new RuntimeException("Failed to register check for service.", e);
+                }
+            }
+            log.debug("Registered checks for service {}", description);
 
             return consulServiceIdentifier;
         });

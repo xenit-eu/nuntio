@@ -14,4 +14,5 @@ dependencies {
     testAnnotationProcessor 'org.projectlombok:lombok:1.18.20'
     testCompileOnly 'org.projectlombok:lombok:1.18.20'
     testImplementation 'org.mockito:mockito-core:2.21.0'
+    testImplementation project(':nuntio-registry-fake')
 }

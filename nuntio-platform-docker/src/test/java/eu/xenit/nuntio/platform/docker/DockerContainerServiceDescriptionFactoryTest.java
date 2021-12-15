@@ -10,6 +10,7 @@ import eu.xenit.nuntio.platform.docker.config.modifier.ServiceConfigurationModif
 import eu.xenit.nuntio.platform.docker.config.parser.NuntioLabelsParser;
 import com.github.dockerjava.api.command.InspectContainerResponse;
 import com.github.dockerjava.api.model.ContainerConfig;
+import eu.xenit.nuntio.registry.fake.checks.FakeCheckFactory;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -29,7 +30,7 @@ class DockerContainerServiceDescriptionFactoryTest {
         mockServiceConfigurationModifier = mock(ServiceConfigurationModifier.class);
 
         dockerContainerServiceDescriptionFactory = new DockerContainerServiceDescriptionFactory(
-                new NuntioLabelsParser("nuntio"),
+                new NuntioLabelsParser("nuntio", new FakeCheckFactory()),
                 Collections.singletonList(mockServiceConfigurationModifier)
         );
     }

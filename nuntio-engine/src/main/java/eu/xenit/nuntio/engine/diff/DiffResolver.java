@@ -52,6 +52,7 @@ public class DiffResolver implements Consumer<Diff> {
                         .address(platformServiceConfiguration.getServiceBinding().getIp())
                         .port(platformServiceConfiguration.getServiceBinding().getPort().orElseThrow())
                         .tags(platformServiceConfiguration.getServiceTags())
+                        .checks(platformServiceConfiguration.getChecks())
                         .metadata(createMetadata(platformServiceConfiguration))
                         .build()
                 )
