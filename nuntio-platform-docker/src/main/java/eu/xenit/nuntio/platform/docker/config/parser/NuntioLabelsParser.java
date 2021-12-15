@@ -1,5 +1,6 @@
 package eu.xenit.nuntio.platform.docker.config.parser;
 
+import eu.xenit.nuntio.api.checks.InvalidCheckException;
 import eu.xenit.nuntio.api.checks.ServiceCheckFactory;
 import eu.xenit.nuntio.api.platform.PlatformServiceConfiguration;
 import eu.xenit.nuntio.api.platform.ServiceBinding;
@@ -97,11 +98,15 @@ public class NuntioLabelsParser implements ServiceConfigurationParser {
                     .map(serviceCheckConfiguration -> {
                         Map<String, String> checkOptions = new HashMap<>(serviceCheckConfiguration.getOptions());
                         String type = checkOptions.remove("type");
-                        return serviceCheckFactory.createCheck(
-                                type,
-                                serviceCheckConfiguration.getName(),
-                                checkOptions
-                        );
+                        try {
+                            return serviceCheckFactory.createCheck(
+                                    type,
+                                    serviceCheckConfiguration.getName(),
+                                    checkOptions
+                            );
+                        } catch (InvalidCheckException e) {
+                            throw new InvalidMetadataException(e);
+                        }
                     })
                     .collect(Collectors.toSet());
 

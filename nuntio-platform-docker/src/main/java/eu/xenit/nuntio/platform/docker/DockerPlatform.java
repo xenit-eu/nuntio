@@ -1,5 +1,6 @@
 package eu.xenit.nuntio.platform.docker;
 
+import eu.xenit.nuntio.api.checks.InvalidCheckException;
 import eu.xenit.nuntio.api.identifier.PlatformIdentifier;
 import eu.xenit.nuntio.api.platform.PlatformServiceDescription;
 import eu.xenit.nuntio.api.platform.PlatformServiceEvent;
@@ -10,6 +11,7 @@ import eu.xenit.nuntio.api.platform.stream.EventStream;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.exception.NotFoundException;
 import com.github.dockerjava.api.model.Container;
+import eu.xenit.nuntio.platform.docker.config.parser.InvalidMetadataException;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -48,6 +50,9 @@ public class DockerPlatform implements ServicePlatform {
 
                 return Optional.of(serviceDescriptionFactory.createServiceDescription(response));
             } catch (NotFoundException e) {
+                return Optional.empty();
+            } catch(InvalidMetadataException e) {
+                log.error("Invalid metadata on platform service {}. Ignoring service.", identifier, e);
                 return Optional.empty();
             }
         }

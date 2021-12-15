@@ -30,7 +30,7 @@ public class ConsulHttpCheck extends ConsulRemoteCheck
 
         private final String scheme;
 
-        public static final HttpCheckScheme ofScheme(String scheme) {
+        public static HttpCheckScheme ofScheme(String scheme) {
             for (HttpCheckScheme value : values()) {
                 if(Objects.equals(value.getScheme(), scheme.toLowerCase(Locale.ROOT))) {
                     return value;

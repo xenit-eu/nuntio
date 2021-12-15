@@ -1,5 +1,6 @@
 package eu.xenit.nuntio.platform.docker.config.parser;
 
+import eu.xenit.nuntio.api.checks.InvalidCheckException;
 import eu.xenit.nuntio.api.checks.ServiceCheckFactory;
 import eu.xenit.nuntio.api.platform.PlatformServiceConfiguration;
 import eu.xenit.nuntio.api.platform.ServiceBinding;
@@ -103,19 +104,25 @@ public class RegistratorCompatibleParser implements ServiceConfigurationParser {
             checkData.put("initial-status", metadata.get("check_initial_status"));
             checkData.put("deregister-critical-service-after", metadata.get("check_deregister_after"));
 
-            if(!metadata.getOrDefault("check_http", "").isEmpty()) {
-                Map<String, String> httpCheck = new HashMap<>(checkData);
-                httpCheck.put("path", metadata.get("check_http"));
-                httpCheck.put("method", metadata.get("check_http_method"));
-                platformServiceBuilder.check(serviceCheckFactory.createCheck("http", "registrator-http", httpCheck));
-            } else if(!metadata.getOrDefault("check_https", "").isEmpty()) {
-                Map<String, String> httpCheck = new HashMap<>(checkData);
-                httpCheck.put("path", metadata.get("check_https"));
-                httpCheck.put("method", metadata.get("check_https_method"));
-                httpCheck.put("scheme", "https");
-                platformServiceBuilder.check(serviceCheckFactory.createCheck("http", "registrator-https", httpCheck));
-            } else if(!metadata.getOrDefault("check_tcp", "").isEmpty()) {
-                platformServiceBuilder.check(serviceCheckFactory.createCheck("tcp", "registrator-tcp", checkData));
+            try {
+                if (!metadata.getOrDefault("check_http", "").isEmpty()) {
+                    Map<String, String> httpCheck = new HashMap<>(checkData);
+                    httpCheck.put("path", metadata.get("check_http"));
+                    httpCheck.put("method", metadata.get("check_http_method"));
+                    platformServiceBuilder.check(
+                            serviceCheckFactory.createCheck("http", "registrator-http", httpCheck));
+                } else if (!metadata.getOrDefault("check_https", "").isEmpty()) {
+                    Map<String, String> httpCheck = new HashMap<>(checkData);
+                    httpCheck.put("path", metadata.get("check_https"));
+                    httpCheck.put("method", metadata.get("check_https_method"));
+                    httpCheck.put("scheme", "https");
+                    platformServiceBuilder.check(
+                            serviceCheckFactory.createCheck("http", "registrator-https", httpCheck));
+                } else if (!metadata.getOrDefault("check_tcp", "").isEmpty()) {
+                    platformServiceBuilder.check(serviceCheckFactory.createCheck("tcp", "registrator-tcp", checkData));
+                }
+            } catch(InvalidCheckException e) {
+                throw new InvalidMetadataException(e);
             }
 
             platformServiceBuilder.serviceMetadata(metadata);

@@ -1,5 +1,6 @@
 package eu.xenit.nuntio.registry.fake.checks;
 
+import eu.xenit.nuntio.api.checks.InvalidCheckException;
 import eu.xenit.nuntio.api.checks.ServiceCheck;
 import eu.xenit.nuntio.api.checks.ServiceCheckFactory;
 import java.util.Map;
@@ -19,9 +20,9 @@ public class FakeCheckFactory implements ServiceCheckFactory {
     }
 
     @Override
-    public ServiceCheck createCheck(String type, String id, Map<String, String> options) {
+    public ServiceCheck createCheck(String type, String id, Map<String, String> options) throws InvalidCheckException {
         if(!supportsCheckType(type)) {
-            throw new IllegalArgumentException("Check type "+type+" is not supported.");
+            throw new InvalidCheckException(id, "Check type "+type+" is not supported.");
         }
         return new FakeCheck(id, type,
                 options.entrySet()

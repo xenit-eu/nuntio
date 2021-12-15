@@ -1,6 +1,7 @@
 package eu.xenit.nuntio.registry.consul.checks;
 
 import com.ecwid.consul.v1.agent.model.NewCheck;
+import eu.xenit.nuntio.api.checks.InvalidCheckException;
 import eu.xenit.nuntio.api.registry.RegistryServiceDescription;
 import eu.xenit.nuntio.registry.consul.ConsulServiceIdentifier;
 import java.util.HashSet;
@@ -50,23 +51,27 @@ public abstract class AbstractConsulCheck implements ConsulCheck {
         public static final String DEREGISTER_CRITICAL_SERVICE_AFTER = "deregister-critical-service-after";
 
         @Override
-        public T createCheck(String type, String id, Map<String, String> options) {
+        public T createCheck(String type, String id, Map<String, String> options) throws InvalidCheckException {
             if(!supportsCheckType(type)) {
-                throw new IllegalArgumentException("Type "+type+" is not supported by this factory.");
+                throw new InvalidCheckException(id, "Type "+type+" is not supported by this factory");
             }
-            T check = createCheck();
-            check.setId(id);
-            check.setInitialCheckStatus(CheckStatus.ofStatus(options.getOrDefault(INITIAL_STATUS, CheckStatus.CRITICAL.toString())));
-            check.setDeregisterCriticalServiceAfter(options.get(DEREGISTER_CRITICAL_SERVICE_AFTER));
-            initializeCheck(check, options);
 
             Set<String> configuredOptions = new HashSet<>(options.keySet());
             configuredOptions.removeAll(supportedOptions());
             if(!configuredOptions.isEmpty()) {
-                throw new IllegalArgumentException("Type "+ type+" does not support options "+configuredOptions);
+                throw new InvalidCheckException(id, "Type "+ type+" does not support options "+configuredOptions);
             }
 
-            return check;
+            try {
+                T check = createCheck();
+                check.setId(id);
+                check.setInitialCheckStatus(CheckStatus.ofStatus(options.getOrDefault(INITIAL_STATUS, CheckStatus.CRITICAL.toString())));
+                check.setDeregisterCriticalServiceAfter(options.get(DEREGISTER_CRITICAL_SERVICE_AFTER));
+                initializeCheck(check, options);
+                return check;
+            } catch(Throwable e) {
+                throw new InvalidCheckException(id, e.getMessage(), e);
+            }
         }
 
         protected Set<String> supportedOptions() {

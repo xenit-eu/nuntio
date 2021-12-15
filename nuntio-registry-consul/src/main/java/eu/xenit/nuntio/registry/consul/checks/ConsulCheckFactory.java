@@ -1,5 +1,6 @@
 package eu.xenit.nuntio.registry.consul.checks;
 
+import eu.xenit.nuntio.api.checks.InvalidCheckException;
 import eu.xenit.nuntio.api.checks.ServiceCheck;
 import eu.xenit.nuntio.api.checks.ServiceCheckFactory;
 import java.util.List;
@@ -27,9 +28,11 @@ public class ConsulCheckFactory implements ServiceCheckFactory {
     }
 
     @Override
-    public ServiceCheck createCheck(String type, String id, Map<String, String> options) {
-        return findFactoryFor(type)
-                .map(factory -> factory.createCheck(type, id, options))
-                .orElseThrow(() -> new IllegalArgumentException("Check type "+type+" is not supported."));
+    public ServiceCheck createCheck(String type, String id, Map<String, String> options) throws InvalidCheckException {
+        Optional<ConsulCheck.ConsulCheckFactory> factory = findFactoryFor(type);
+        if(factory.isEmpty()) {
+            throw new InvalidCheckException(id, "Check type "+type+" is not supported.");
+        }
+        return factory.get().createCheck(type,id,options);
     }
 }
