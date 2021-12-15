@@ -320,6 +320,18 @@ Some Check types have mandatory options that will result in an error when they a
 </thead>
 <tbody>
 <tr>
+<td>any</td>
+<td><code>initial-status</code></td>
+<td><code>critical</code></td>
+<td>Initial status of the check before it has been executed for the first time. (<code>critical</code>, <code>warning</code> or <code>passing</code>)</td>
+</tr>
+<tr>
+<td>any</td>
+<td><code>deregister-critical-service-after</code></td>
+<td>Disabled</td>
+<td>Time after which a service that remain s in the critical state will be deregistered.</td>
+</tr>
+<tr>
 <td><code>tcp</code>, <code>http</code></td>
 <td><code>interval</code></td>
 <td><em>Required</em></td>

@@ -3,6 +3,7 @@ package eu.xenit.nuntio.registry.consul.checks;
 import com.ecwid.consul.v1.agent.model.NewCheck;
 import eu.xenit.nuntio.api.registry.RegistryServiceDescription;
 import eu.xenit.nuntio.registry.consul.ConsulServiceIdentifier;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import lombok.Data;
@@ -41,7 +42,10 @@ public abstract class ConsulRemoteCheck extends AbstractConsulCheck {
 
         @Override
         protected Set<String> supportedOptions() {
-            return Set.of("interval", "timeout");
+            Set<String> supportedOptions = new HashSet<>(super.supportedOptions());
+            supportedOptions.add("interval");
+            supportedOptions.add("timeout");
+            return supportedOptions;
         }
     }
 

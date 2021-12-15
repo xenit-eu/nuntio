@@ -50,12 +50,19 @@ public class ConsulHttpCheck extends ConsulRemoteCheck
             RegistryServiceDescription serviceDescription, IpAndPort host, NewCheck check) {
         check.setMethod(method);
         check.setHeader(headers);
-        check.setHttp(scheme.getScheme()+"://"+host.toHost()+"/"+ path);
+        if(!path.startsWith("/"))  {
+            path = "/"+path;
+        }
+        check.setHttp(scheme.getScheme()+"://"+host.toHost()+path);
         check.setNotes(check.getMethod()+" "+check.getHttp());
     }
 
     public static class HttpCheckFactory extends RemoteCheckFactory<ConsulHttpCheck> {
+
         private static final Set<String> CHECK_TYPES = Set.of("consul:http", "http");
+        public static final String METHOD = "method";
+        public static final String PATH = "path";
+        public static final String SCHEME = "scheme";
 
         @Override
         public boolean supportsCheckType(String type) {
@@ -70,17 +77,17 @@ public class ConsulHttpCheck extends ConsulRemoteCheck
         @Override
         protected void initializeCheck(ConsulHttpCheck check, Map<String, String> options) {
             super.initializeCheck(check, options);
-            check.setMethod(options.getOrDefault("method", "GET"));
-            check.setPath(options.getOrDefault("path", "/"));
-            check.setScheme(HttpCheckScheme.ofScheme(options.getOrDefault("scheme", HttpCheckScheme.HTTP.getScheme())));
+            check.setMethod(options.getOrDefault(METHOD, "GET"));
+            check.setPath(options.getOrDefault(PATH, "/"));
+            check.setScheme(HttpCheckScheme.ofScheme(options.getOrDefault(SCHEME, HttpCheckScheme.HTTP.getScheme())));
         }
 
         @Override
         protected Set<String> supportedOptions() {
             Set<String> supportedOptions = new HashSet<>(super.supportedOptions());
-            supportedOptions.add("method");
-            supportedOptions.add("path");
-            supportedOptions.add("scheme");
+            supportedOptions.add(METHOD);
+            supportedOptions.add(PATH);
+            supportedOptions.add(SCHEME);
             return supportedOptions;
         }
     }
