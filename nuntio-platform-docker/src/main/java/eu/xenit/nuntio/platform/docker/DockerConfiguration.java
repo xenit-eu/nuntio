@@ -79,9 +79,9 @@ public class DockerConfiguration {
     }
 
     @Bean
-    ServiceConfigurationParser registratorCompatibleParser(DockerProperties dockerProperties) {
+    ServiceConfigurationParser registratorCompatibleParser(DockerProperties dockerProperties, ServiceCheckFactory serviceCheckFactory) {
         if(dockerProperties.getRegistratorCompat().isEnabled()) {
-            return new RegistratorCompatibleParser(dockerProperties.getRegistratorCompat());
+            return new RegistratorCompatibleParser(dockerProperties.getRegistratorCompat(), serviceCheckFactory);
         }
         return new NullServiceConfigurationParser();
     }
@@ -91,7 +91,7 @@ public class DockerConfiguration {
     ServiceConfigurationParser switchingServiceConfigurationParser(DockerProperties dockerProperties, ServiceCheckFactory serviceCheckFactory) {
         return new SwitchingServiceConfigurationParser(Arrays.asList(
                 nuntioLabelsParser(dockerProperties, serviceCheckFactory),
-                registratorCompatibleParser(dockerProperties)
+                registratorCompatibleParser(dockerProperties, serviceCheckFactory)
         ));
     }
 

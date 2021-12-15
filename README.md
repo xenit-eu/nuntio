@@ -248,6 +248,15 @@ Following registrator features are supported for both labels and environment var
  * `SERVICE_NAME`, `SERVICE_<port>_NAME`: Setting a service name. If `SERVICE_NAME` is used and multiple services are present, the service name will be suffixed with the internal port.
  * `SERVICE_TAGS`, `SERVICE_<port>_TAGS`: Setting service tags.
  * `SERVICE_<meta>`, `SERVICE_<port>_<meta>`: Setting service metadata values.
+ * `SERVICE_CHECK_HTTP`, `SERVICE_<port>_CHECK_HTTP`: HTTP check on the service at this port. Path is specified in this variable
+ * `SERVICE_CHECK_HTTP_METHOD`, `SERVICE_<port>_CHECK_HTTP_METHOD`: Method to use for HTTP check
+ * `SERVICE_CHECK_HTTPS`, `SERVICE_<port>_CHECK_HTTPS`: HTTPS check on the service at this port. Path is specified in this variable
+ * `SERVICE_CHECK_HTTPS_METHOD`, `SERVICE_<port>_CHECK_HTTPS_METHOD`: Method to use for HTTPS check
+ * `SERVICE_CHECK_TCP`, `SERVICE_<port>_CHECK_TCP`: Enable TCP check on the service at this port if not empty
+ * `SERVICE_CHECK_TIMEOUT`, `SERVICE_<port>_CHECK_TIMEOUT`: Timeout on the check for the service
+ * `SERVICE_CHECK_INTERVAL`, `SERVICE_<port>_CHECK_INTERVAL`: Interval how often the check for the service will be executed
+ * `SERVICE_CHECK_INITIAL_STATUS`, `SERVICE_<port>_CHECK_INITIAL_STATUS`: Initial health check status when the check is registered
+ * `SERVICE_CHECK_DEREGISTER_AFTER`, `SERVICE_<port>_CHECK_DEREGISTER_AFTER`: Deregister the service if it is in critical state for this duration
 
 Following registrator configuration options are supported:
  * `-internal`: Use `nuntio.docker.bind=INTERNAL` to register internal IP and port instead of the host mapped ones.

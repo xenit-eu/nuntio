@@ -5,7 +5,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import eu.xenit.nuntio.api.platform.PlatformServiceConfiguration;
 import eu.xenit.nuntio.api.platform.ServiceBinding;
 import eu.xenit.nuntio.platform.docker.DockerProperties.RegistratorCompatibleProperties;
+import eu.xenit.nuntio.registry.fake.checks.FakeCheck;
+import eu.xenit.nuntio.registry.fake.checks.FakeCheckFactory;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -20,7 +23,7 @@ class RegistratorCompatibleParserTest {
     @BeforeEach
     void setUp() {
         registratorCompatibleProperties = new RegistratorCompatibleProperties();
-        configurationParser = new RegistratorCompatibleParser(registratorCompatibleProperties);
+        configurationParser = new RegistratorCompatibleParser(registratorCompatibleProperties, new FakeCheckFactory(""));
     }
 
     @Test
@@ -378,6 +381,119 @@ class RegistratorCompatibleParserTest {
             ), services);
         }
 
+    }
+
+    @Nested
+    class Checks {
+        @Test
+        void httpCheck() {
+            var redis = SimpleContainerMetadata.builder()
+                    .imageName("progrium/redis")
+                    .internalPortBinding(ServiceBinding.fromPort(8080))
+                    .internalPortBinding(ServiceBinding.fromPort(8081))
+                    .environment("SERVICE_CHECK_HTTP", "/abc")
+                    .environment("SERVICE_8081_CHECK_HTTP", "/xyz")
+                    .build();
+
+            var services = configurationParser.toServiceConfigurations(redis);
+            assertEquals(Set.of(
+                    PlatformServiceConfiguration.builder()
+                            .serviceName("redis-8080")
+                            .serviceBinding(ServiceBinding.fromPort(8080))
+                            .serviceMetadata("check_http", "/abc")
+                            .check(new FakeCheck("registrator-http", "http", Map.of(
+                                    "path", "/abc",
+                                    "interval", "10s"
+                                    )))
+                            .build(),
+
+                    PlatformServiceConfiguration.builder()
+                            .serviceName("redis-8081")
+                            .serviceBinding(ServiceBinding.fromPort(8081))
+                            .serviceMetadata("check_http", "/xyz")
+                            .check(new FakeCheck("registrator-http", "http", Map.of(
+                                    "path", "/xyz",
+                                    "interval", "10s"
+                            )))
+                            .build()
+            ), services);
+        }
+
+        @Test
+        void httpsCheck() {
+            var redis = SimpleContainerMetadata.builder()
+                    .imageName("progrium/redis")
+                    .internalPortBinding(ServiceBinding.fromPort(8080))
+                    .internalPortBinding(ServiceBinding.fromPort(8081))
+                    .environment("SERVICE_CHECK_HTTPS", "/abc")
+                    .environment("SERVICE_CHECK_INTERVAL", "45s")
+                    .environment("SERVICE_8081_CHECK_HTTPS", "/xyz")
+                    .build();
+
+            var services = configurationParser.toServiceConfigurations(redis);
+            assertEquals(Set.of(
+                    PlatformServiceConfiguration.builder()
+                            .serviceName("redis-8080")
+                            .serviceBinding(ServiceBinding.fromPort(8080))
+                            .serviceMetadata("check_https", "/abc")
+                            .serviceMetadata("check_interval", "45s")
+                            .check(new FakeCheck("registrator-https", "http", Map.of(
+                                    "scheme","https",
+                                    "path", "/abc",
+                                    "interval", "45s"
+                            )))
+                            .build(),
+
+                    PlatformServiceConfiguration.builder()
+                            .serviceName("redis-8081")
+                            .serviceBinding(ServiceBinding.fromPort(8081))
+                            .serviceMetadata("check_https", "/xyz")
+                            .serviceMetadata("check_interval", "45s")
+                            .check(new FakeCheck("registrator-https", "http", Map.of(
+                                    "scheme","https",
+                                    "path", "/xyz",
+                                    "interval", "45s"
+                            )))
+                            .build()
+            ), services);
+        }
+
+        @Test
+        void tcpCheck() {
+            var redis = SimpleContainerMetadata.builder()
+                    .imageName("progrium/redis")
+                    .internalPortBinding(ServiceBinding.fromPort(8080))
+                    .internalPortBinding(ServiceBinding.fromPort(8081))
+                    .environment("SERVICE_CHECK_TCP", "on")
+                    .environment("SERVICE_CHECK_TIMEOUT", "45s")
+                    .environment("SERVICE_CHECK_INITIAL_STATUS", "warning")
+                    .environment("SERVICE_8081_CHECK_TCP", "")
+                    .build();
+
+            var services = configurationParser.toServiceConfigurations(redis);
+            assertEquals(Set.of(
+                    PlatformServiceConfiguration.builder()
+                            .serviceName("redis-8080")
+                            .serviceBinding(ServiceBinding.fromPort(8080))
+                            .serviceMetadata("check_tcp", "on")
+                            .serviceMetadata("check_timeout", "45s")
+                            .serviceMetadata("check_initial_status", "warning")
+                            .check(new FakeCheck("registrator-tcp", "tcp", Map.of(
+                                    "interval", "10s",
+                                    "timeout", "45s",
+                                    "initial-status", "warning"
+                            )))
+                            .build(),
+
+                    PlatformServiceConfiguration.builder()
+                            .serviceName("redis-8081")
+                            .serviceBinding(ServiceBinding.fromPort(8081))
+                            .serviceMetadata("check_tcp", "")
+                            .serviceMetadata("check_timeout", "45s")
+                            .serviceMetadata("check_initial_status", "warning")
+                            .build()
+            ), services);
+        }
     }
 
     @Nested

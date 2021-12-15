@@ -3,6 +3,8 @@ package eu.xenit.nuntio.registry.fake.checks;
 import eu.xenit.nuntio.api.checks.ServiceCheck;
 import eu.xenit.nuntio.api.checks.ServiceCheckFactory;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 
@@ -21,6 +23,11 @@ public class FakeCheckFactory implements ServiceCheckFactory {
         if(!supportsCheckType(type)) {
             throw new IllegalArgumentException("Check type "+type+" is not supported.");
         }
-        return new FakeCheck(id, type, options);
+        return new FakeCheck(id, type,
+                options.entrySet()
+                        .stream()
+                        .filter(e -> e.getValue() != null)
+                        .collect(Collectors.toMap(Entry::getKey, Entry::getValue))
+        );
     }
 }
