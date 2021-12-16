@@ -27,6 +27,9 @@ dependencies {
     testImplementation platform('org.testcontainers:testcontainers-bom:1.16.0')
     testImplementation 'org.testcontainers:junit-jupiter'
     testImplementation 'com.ecwid.consul:consul-api:1.4.5'
+    testImplementation 'com.google.code.gson:gson:2.8.7'
+    testImplementation 'org.apache.httpcomponents:httpclient:4.5.13'
+
     testImplementation platform('com.github.docker-java:docker-java-bom:3.2.12')
     testImplementation 'com.github.docker-java:docker-java-core'
     testImplementation 'com.github.docker-java:docker-java-transport-httpclient5'

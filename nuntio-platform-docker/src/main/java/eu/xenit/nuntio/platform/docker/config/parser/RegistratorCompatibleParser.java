@@ -98,23 +98,36 @@ public class RegistratorCompatibleParser implements ServiceConfigurationParser {
             metadata.remove("id");
             metadata.remove("tags");
 
+            var optionMapping = Map.of(
+                    "check_interval", "interval",
+                    "check_timeout", "timeout",
+                    "check_initial_status", "initial-status",
+                    "check_deregister_after", "deregister-critical-service-after"
+            );
             Map<String, String> checkData = new HashMap<>();
-            checkData.put("interval", metadata.getOrDefault("check_interval", "10s"));
-            checkData.put("timeout", metadata.get("check_timeout"));
-            checkData.put("initial-status", metadata.get("check_initial_status"));
-            checkData.put("deregister-critical-service-after", metadata.get("check_deregister_after"));
+            optionMapping.forEach((metadataKey, checkOptionKey) -> {
+                if(!metadata.getOrDefault(metadataKey, "").isEmpty()) {
+                    checkData.put(checkOptionKey, metadata.get(metadataKey));
+                }
+            });
+
+            checkData.putIfAbsent("interval", "10s");
 
             try {
                 if (!metadata.getOrDefault("check_http", "").isEmpty()) {
                     Map<String, String> httpCheck = new HashMap<>(checkData);
                     httpCheck.put("path", metadata.get("check_http"));
-                    httpCheck.put("method", metadata.get("check_http_method"));
+                    if(!metadata.getOrDefault("check_http_method", "").isEmpty()) {
+                        httpCheck.put("method", metadata.get("check_http_method"));
+                    }
                     platformServiceBuilder.check(
                             serviceCheckFactory.createCheck("http", "registrator-http", httpCheck));
                 } else if (!metadata.getOrDefault("check_https", "").isEmpty()) {
                     Map<String, String> httpCheck = new HashMap<>(checkData);
                     httpCheck.put("path", metadata.get("check_https"));
-                    httpCheck.put("method", metadata.get("check_https_method"));
+                    if(!metadata.getOrDefault("check_https_method", "").isEmpty()) {
+                        httpCheck.put("method", metadata.get("check_https_method"));
+                    }
                     httpCheck.put("scheme", "https");
                     platformServiceBuilder.check(
                             serviceCheckFactory.createCheck("http", "registrator-https", httpCheck));

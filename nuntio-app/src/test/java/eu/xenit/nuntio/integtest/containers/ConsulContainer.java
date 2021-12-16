@@ -1,6 +1,7 @@
 package eu.xenit.nuntio.integtest.containers;
 
 import com.ecwid.consul.v1.ConsulClient;
+import com.ecwid.consul.v1.ConsulRawClient;
 import com.github.dockerjava.api.model.HealthCheck;
 import java.time.Duration;
 import java.util.Arrays;
@@ -34,7 +35,11 @@ public class ConsulContainer extends GenericContainer<ConsulContainer> {
         setCommand("agent", "-dev", "-client=0.0.0.0", "-advertise="+getAdvertiseAddress());
     }
 
+    public ConsulRawClient getConsulRawClient() {
+        return new ConsulRawClient(getHost(), getMappedPort(getClientPort()));
+    }
+
     public ConsulClient getConsulClient() {
-        return new ConsulClient(getHost(), getMappedPort(getClientPort()));
+        return new ConsulClient(getConsulRawClient());
     }
 }
