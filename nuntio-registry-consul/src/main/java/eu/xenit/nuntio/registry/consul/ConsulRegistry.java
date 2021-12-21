@@ -137,10 +137,13 @@ public class ConsulRegistry implements ServiceRegistry {
     public void unregisterCheck(RegistryServiceIdentifier serviceIdentifier, CheckType checkType) {
         if (serviceIdentifier instanceof ConsulServiceIdentifier) {
             registryMetrics.unregisterCheck(() -> {
-                log.debug("Deregistering check {}:{}", serviceIdentifier, checkType);
-                consulClient.agentCheckDeregister(createCheckId((ConsulServiceIdentifier) serviceIdentifier, checkType),
-                        consulConfig.getToken());
-                log.debug("Deregistered check {}:{}", serviceIdentifier, checkType);
+                if(checkExists((ConsulServiceIdentifier) serviceIdentifier, checkType)) {
+                    log.debug("Deregistering check {}:{}", serviceIdentifier, checkType);
+                    consulClient.agentCheckDeregister(
+                            createCheckId((ConsulServiceIdentifier) serviceIdentifier, checkType),
+                            consulConfig.getToken());
+                    log.debug("Deregistered check {}:{}", serviceIdentifier, checkType);
+                }
 
             });
         }
@@ -169,5 +172,11 @@ public class ConsulRegistry implements ServiceRegistry {
                 log.debug("Updated check {}:{} with {}", serviceIdentifier, checkType, checkStatus);
             });
         }
+    }
+
+    private boolean checkExists(ConsulServiceIdentifier serviceIdentifier, CheckType checkType) {
+        String checkId = createCheckId(serviceIdentifier, checkType);
+        var agentChecks = consulClient.getAgentChecks().getValue();
+        return agentChecks.containsKey(checkId);
     }
 }
