@@ -41,6 +41,7 @@ createDockerFile {
     entryPoint("/opt/nuntio/bin/nuntio-app")
     exposePort(8080)
     instruction("HEALTHCHECK --timeout=3s CMD curl --fail --silent http://localhost:8080/actuator/health/liveness || exit 1")
+    environmentVariable("JAVA_OPTS", "-Xmx500M -XX:+CrashOnOutOfMemoryError")
 }
 
 dockerBuild {
