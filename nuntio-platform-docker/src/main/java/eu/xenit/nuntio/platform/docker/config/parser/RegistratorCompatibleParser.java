@@ -124,6 +124,9 @@ public class RegistratorCompatibleParser implements ServiceConfigurationParser {
         String configKey = "SERVICE"
                 +serviceBinding.getPort().map(port -> "_"+port).orElse("")
                 +configKind.getEnvVarSuffix();
+        if(configuration.getOrDefault(configKey, "").isBlank()) {
+            return Optional.empty();
+        }
         return Optional.ofNullable(configuration.get(configKey));
     }
 

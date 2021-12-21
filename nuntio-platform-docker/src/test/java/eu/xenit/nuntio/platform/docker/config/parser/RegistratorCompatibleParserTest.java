@@ -283,6 +283,25 @@ class RegistratorCompatibleParserTest {
                             .build()
             ), services);
         }
+
+        @Test
+        void emptyServiceName() {
+            var redis = SimpleContainerMetadata.builder()
+                    .imageName("docker.io/progrium/redis")
+                    .environment("SERVICE_NAME", "")
+                    .internalPortBinding(ServiceBinding.fromPort(8000))
+                    .build();
+
+            var services = configurationParser.toServiceConfigurations(redis);
+
+            assertEquals(Collections.singleton(
+                    PlatformServiceConfiguration.builder()
+                            .serviceName("redis")
+                            .serviceBinding(ServiceBinding.fromPort(8000))
+                            .build()
+            ), services);
+
+        }
     }
 
     @Nested
