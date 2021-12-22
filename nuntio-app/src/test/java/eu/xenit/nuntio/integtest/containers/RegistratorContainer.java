@@ -2,6 +2,7 @@ package eu.xenit.nuntio.integtest.containers;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import lombok.EqualsAndHashCode;
 import org.testcontainers.containers.GenericContainer;
 
@@ -12,6 +13,7 @@ public class RegistratorContainer extends GenericContainer<RegistratorContainer>
     private ConsulContainer consulContainer;
     private boolean internalPorts;
     private boolean explicitOnly;
+    private Set<String> forcedTags;
 
     public RegistratorContainer() {
         super("hub.xenit.eu/public/registrator:7.1");
@@ -50,6 +52,11 @@ public class RegistratorContainer extends GenericContainer<RegistratorContainer>
             commandParams.add("-explicit");
         }
 
+        if(forcedTags != null && !forcedTags.isEmpty()) {
+            commandParams.add("-tags");
+            commandParams.add(String.join(",", forcedTags));
+        }
+
 
         if(consulContainer != null) {
             commandParams.add("-ip");
@@ -66,6 +73,12 @@ public class RegistratorContainer extends GenericContainer<RegistratorContainer>
     }
 
     @Override
+    public RegistratorContainer withForcedTags(Set<String> forcedTags) {
+        this.forcedTags = forcedTags;
+        return this;
+    }
+
+    @Override
     public boolean isInternalPorts() {
         return this.internalPorts;
     }
@@ -73,5 +86,10 @@ public class RegistratorContainer extends GenericContainer<RegistratorContainer>
     @Override
     public boolean isRegistratorExplicitOnly() {
         return this.explicitOnly;
+    }
+
+    @Override
+    public Set<String> getForcedTags() {
+        return forcedTags;
     }
 }

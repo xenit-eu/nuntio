@@ -2,6 +2,8 @@ package eu.xenit.nuntio.engine;
 
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
+import java.util.HashSet;
+import java.util.Set;
 import lombok.Data;
 
 @Data
@@ -14,6 +16,8 @@ public class EngineProperties {
     ShutdownMode shutdownMode = ShutdownMode.UNREGISTER_CHECKS;
 
     AddressFamilies serviceAddress = new AddressFamilies();
+
+    Set<String> forcedTags = new HashSet<>();
 
     @Data
     public static class LiveWatchProperties {
