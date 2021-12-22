@@ -11,6 +11,7 @@ import eu.xenit.nuntio.engine.diff.InitialRegistrationResolver;
 import eu.xenit.nuntio.engine.metrics.LiveWatchMetrics;
 import eu.xenit.nuntio.engine.metrics.DiffOperationMetrics;
 import eu.xenit.nuntio.engine.metrics.MetricsFactory;
+import eu.xenit.nuntio.engine.postprocessor.ForceTagsPostProcessor;
 import eu.xenit.nuntio.engine.postprocessor.RemoveDisabledAddressFamiliesPostProcessor;
 import eu.xenit.nuntio.engine.postprocessor.RemoveStoppedPlatformsPostProcessor;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -58,6 +59,11 @@ public class EngineConfiguration {
     @Bean
     PlatformServicePostProcessor removeDisabledAddressFamiliesPostProcessor(EngineProperties engineProperties) {
         return new RemoveDisabledAddressFamiliesPostProcessor(engineProperties.getServiceAddress());
+    }
+
+    @Bean
+    PlatformServicePostProcessor forceTagsPostProcessor(EngineProperties engineProperties) {
+        return new ForceTagsPostProcessor(engineProperties.getForcedTags());
     }
 
     @Bean

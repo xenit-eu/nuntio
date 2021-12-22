@@ -52,6 +52,9 @@ Only global configuration options are documented here.
 <td><code>nuntio.engine.serviceAddress.[ipv4|ipv6]</code></td><td><code>true</code></td><td>Which type of service addresses will be registered in the service registry.</td>
 </tr>
 <tr>
+<td><code>nuntio.engine.forcedTags</code></td><td><code>{}</code></td><td>Force-add comma-separated tags on all services</td>
+</tr>
+<tr>
 <td><code>nuntio.engine.live.enabled</code></td><td><code>true</code></td><td>Enables watching the platform eventstream to immediately react to services changing state.</td>
 </tr>
 <tr>
@@ -240,6 +243,7 @@ Following registrator features are supported for both labels and environment var
 Following registrator configuration options are supported:
  * `-internal`: Use `nuntio.docker.bind=INTERNAL` to register internal IP and port instead of the host mapped ones.
  * `-explicit`: Use `nuntio.docker.registratorCompat.explicit=true`
+ * `-tags`: Use `nuntio.engine.forcedTags` to force-enabled tags on services
 
 ## Consul registry
 
