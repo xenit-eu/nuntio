@@ -1,3 +1,4 @@
+import java.text.SimpleDateFormat
 import java.util.stream.Collectors
 
 plugins {
@@ -42,10 +43,18 @@ createDockerFile {
 
 dockerBuild {
     repositories = ["docker.io/xenit/nuntio"]
-    tags = [
-            ("${project.version}".endsWith("-SNAPSHOT"))?"development":"latest",
-            "${project.version}"
-    ]
+    tags.add(project.provider({ "${project.version}" }))
+    tags.addAll(project.provider({
+        if("${project.version}".endsWith('-SNAPSHOT')) {
+            def dateString = new SimpleDateFormat("ymd'-'hMs").format(new Date()) ;
+            return [
+                "${project.version}".replace('SNAPSHOT', dateString),
+                "development",
+                "development-"+dateString
+            ]
+        }
+        return ["latest"]
+    }))
 }
 
 
