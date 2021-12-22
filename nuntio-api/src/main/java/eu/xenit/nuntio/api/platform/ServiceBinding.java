@@ -53,21 +53,38 @@ public final class ServiceBinding {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder(64);
-        sb.append("ServiceBinding(");
-        if (ip != null) {
-            sb.append(ip).append(":");
-        }
-        if (port != null) {
-            sb.append(port);
-        }
-        if (protocol != null) {
-            sb.append("/").append(protocol);
-        }
+        sb.append("ServiceBinding(").append(toIpPortProtocolString());
         if (ip == null && port == null && protocol == null) {
             sb.append("ANY");
         }
 
         return sb.append(")").toString();
+    }
+
+    public String toPortProtocolString() {
+        StringBuilder sb = new StringBuilder(64);
+
+        if(port != null) {
+            sb.append(port);
+        }
+
+        if(protocol != null) {
+            sb.append("/").append(protocol);
+        }
+
+        return sb.toString();
+    }
+
+    public String toIpPortProtocolString() {
+        StringBuilder sb = new StringBuilder(64);
+
+        if(ip != null) {
+            sb.append(ip).append(":");
+        }
+
+        sb.append(toPortProtocolString());
+
+        return sb.toString();
     }
 
 }
