@@ -5,6 +5,10 @@ on:
     branches:
       - main
     tags:
+      - v*
+  release:
+    types:
+      - published
 
 jobs:
   build:
