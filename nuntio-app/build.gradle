@@ -51,9 +51,9 @@ dockerBuild {
         if("${project.version}".endsWith('-SNAPSHOT')) {
             def dateString = new SimpleDateFormat("yyyyMMdd'-'hhmmss").format(new Date()) ;
             return [
-                "${project.version}".replace('SNAPSHOT', dateString),
+                "${project.version}-${dateString}",
                 "development",
-                "development-"+dateString
+                "development-${dateString}"
             ]
         }
         return ["latest"]
