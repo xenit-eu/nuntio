@@ -49,7 +49,7 @@ dockerBuild {
     tags.add(project.provider({ "${project.version}" }))
     tags.addAll(project.provider({
         if("${project.version}".endsWith('-SNAPSHOT')) {
-            def dateString = new SimpleDateFormat("ymd'-'hMs").format(new Date()) ;
+            def dateString = new SimpleDateFormat("yyyyMMdd'-'hhmmss").format(new Date()) ;
             return [
                 "${project.version}".replace('SNAPSHOT', dateString),
                 "development",
