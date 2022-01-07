@@ -9,7 +9,11 @@ import eu.xenit.nuntio.api.registry.CheckType;
 import eu.xenit.nuntio.api.registry.RegistryServiceDescription;
 import eu.xenit.nuntio.api.registry.RegistryServiceIdentifier;
 import eu.xenit.nuntio.api.registry.ServiceRegistry;
+import eu.xenit.nuntio.api.registry.errors.ServiceDeregistrationException;
+import eu.xenit.nuntio.api.registry.errors.ServiceOperationException;
+import eu.xenit.nuntio.api.registry.errors.ServiceRegistrationException;
 import eu.xenit.nuntio.engine.EngineProperties;
+import eu.xenit.nuntio.engine.failure.FailureReporter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -21,6 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 public class DiffResolver implements Consumer<Diff> {
 
     private ServiceRegistry registry;
+    private FailureReporter failureReporter;
     private EngineProperties engineProperties;
 
     private static final String NUNTIO_RESERVED_PREFIX = "nuntio-";
@@ -32,11 +37,22 @@ public class DiffResolver implements Consumer<Diff> {
         });
 
         diff.cast(EqualService.class).ifPresent(equalService -> {
-            updateServiceChecks(equalService.getDescription(), equalService.getServiceConfiguration(), equalService.getRegistryServiceIdentifier());
+            try {
+                updateServiceChecks(equalService.getDescription(), equalService.getServiceConfiguration(),
+                        equalService.getRegistryServiceIdentifier());
+            } catch(ServiceOperationException e) {
+                log.error("Failed to update service {} checks", equalService.getRegistryServiceIdentifier(), e);
+                failureReporter.reportRegistryFailure(e);
+            }
         });
 
         diff.cast(RemoveService.class).ifPresent(removeService -> {
-            registry.unregisterService(removeService.getRegistryServiceIdentifier());
+            try {
+                registry.unregisterService(removeService.getRegistryServiceIdentifier());
+            } catch(ServiceDeregistrationException e) {
+                log.error("Failed to remove service {}", removeService.getRegistryServiceIdentifier(), e);
+                failureReporter.reportRegistryFailure(e);
+            }
         });
     }
 
@@ -57,31 +73,40 @@ public class DiffResolver implements Consumer<Diff> {
                         .build()
                 )
                 .forEach(service -> {
-                    RegistryServiceIdentifier registryServiceIdentifier = registry.registerService(service);
+                    try {
+                        RegistryServiceIdentifier registryServiceIdentifier = registry.registerService(service);
 
-                    if(engineProperties.getChecks().isHeartbeat()) {
-                        registry.registerCheck(registryServiceIdentifier, CheckType.HEARTBEAT);
-                        registry.updateCheck(registryServiceIdentifier, CheckType.HEARTBEAT, CheckStatus.PASSING,
-                                "Nuntio has registered\n"
-                                        + platformServiceDescription.getIdentifier()+"\n"
-                                        + platformServiceConfiguration.getServiceBinding()
-                        );
-                    }
-                    if(engineProperties.getChecks().isHealthcheck() && platformServiceDescription.getHealth().isPresent()) {
-                        registry.registerCheck(registryServiceIdentifier, CheckType.HEALTHCHECK);
-                    }
+                        if(engineProperties.getChecks().isHeartbeat()) {
+                            registry.registerCheck(registryServiceIdentifier, CheckType.HEARTBEAT);
+                            registry.updateCheck(registryServiceIdentifier, CheckType.HEARTBEAT, CheckStatus.PASSING,
+                                    "Nuntio has registered\n"
+                                            + platformServiceDescription.getIdentifier() + "\n"
+                                            + platformServiceConfiguration.getServiceBinding()
+                            );
+                        }
+                        if (engineProperties.getChecks().isHealthcheck() && platformServiceDescription.getHealth()
+                                .isPresent()) {
+                            registry.registerCheck(registryServiceIdentifier, CheckType.HEALTHCHECK);
+                        }
 
-                    updateHealthCheck(registryServiceIdentifier, platformServiceDescription);
+                        updateHealthCheck(registryServiceIdentifier, platformServiceDescription);
 
-                    if(platformServiceDescription.getState() == PlatformServiceState.PAUSED) {
-                        registry.registerCheck(registryServiceIdentifier, CheckType.PAUSE);
-                        registry.updateCheck(registryServiceIdentifier, CheckType.PAUSE, CheckStatus.FAILING,
-                                "Service is paused");
+                        if(platformServiceDescription.getState() == PlatformServiceState.PAUSED) {
+                            registry.registerCheck(registryServiceIdentifier, CheckType.PAUSE);
+                            registry.updateCheck(registryServiceIdentifier, CheckType.PAUSE, CheckStatus.FAILING,
+                                    "Service is paused");
+                        }
+                    } catch (ServiceRegistrationException e) {
+                        log.error("Failed to register service {}", service, e);
+                        failureReporter.reportRegistryFailure(e);
+                    } catch(ServiceOperationException e) {
+                        log.error("Failed to register service {} check", service, e);
+                        failureReporter.reportRegistryFailure(e);
                     }
                 });
     }
 
-    public void updateServiceChecks(PlatformServiceDescription platformServiceDescription, PlatformServiceConfiguration serviceConfiguration, RegistryServiceIdentifier registryServiceIdentifier) {
+    public void updateServiceChecks(PlatformServiceDescription platformServiceDescription, PlatformServiceConfiguration serviceConfiguration, RegistryServiceIdentifier registryServiceIdentifier) throws ServiceOperationException{
         if(engineProperties.getChecks().isHeartbeat()) {
             registry.updateCheck(registryServiceIdentifier, CheckType.HEARTBEAT, CheckStatus.PASSING,
                     "Nuntio is watching\n"
@@ -121,22 +146,21 @@ public class DiffResolver implements Consumer<Diff> {
     }
 
 
-    private void updateHealthCheck(RegistryServiceIdentifier registryServiceIdentifier, PlatformServiceDescription platformServiceDescription) {
-        if(engineProperties.getChecks().isHealthcheck()) {
-            platformServiceDescription.getHealth().ifPresent(health -> {
-                switch(health.getHealthStatus()) {
-                    case HEALTHY:
-                        registry.updateCheck(registryServiceIdentifier, CheckType.HEALTHCHECK, CheckStatus.PASSING,
-                                health.getLog());
-                        break;
-                    case UNHEALTHY:
-                        registry.updateCheck(registryServiceIdentifier, CheckType.HEALTHCHECK, CheckStatus.FAILING,
-                                health.getLog());
-                        break;
-                    case STARTING:
-                        registry.updateCheck(registryServiceIdentifier, CheckType.HEALTHCHECK, CheckStatus.WARNING, health.getLog());
-                }
-            });
+    private void updateHealthCheck(RegistryServiceIdentifier registryServiceIdentifier, PlatformServiceDescription platformServiceDescription) throws ServiceOperationException{
+        if(engineProperties.getChecks().isHealthcheck() && platformServiceDescription.getHealth().isPresent()) {
+            var health = platformServiceDescription.getHealth().get();
+            switch(health.getHealthStatus()) {
+                case HEALTHY:
+                    registry.updateCheck(registryServiceIdentifier, CheckType.HEALTHCHECK, CheckStatus.PASSING,
+                            health.getLog());
+                    break;
+                case UNHEALTHY:
+                    registry.updateCheck(registryServiceIdentifier, CheckType.HEALTHCHECK, CheckStatus.FAILING,
+                            health.getLog());
+                    break;
+                case STARTING:
+                    registry.updateCheck(registryServiceIdentifier, CheckType.HEALTHCHECK, CheckStatus.WARNING, health.getLog());
+            }
         }
     }
 

@@ -1,6 +1,9 @@
 package eu.xenit.nuntio.engine.metrics;
 
 import eu.xenit.nuntio.api.registry.RegistryServiceIdentifier;
+import eu.xenit.nuntio.api.registry.errors.ServiceDeregistrationException;
+import eu.xenit.nuntio.api.registry.errors.ServiceOperationException;
+import eu.xenit.nuntio.api.registry.errors.ServiceRegistrationException;
 import eu.xenit.nuntio.api.registry.metrics.RegistryMetrics;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Set;
@@ -30,27 +33,27 @@ public class RegistryMetricsImpl implements RegistryMetrics {
     }
 
     @Override
-    public RegistryServiceIdentifier registerService(Supplier<? extends RegistryServiceIdentifier> runnable) {
+    public RegistryServiceIdentifier registerService(ThrowingSupplier<? extends RegistryServiceIdentifier, ? extends ServiceRegistrationException> runnable) throws ServiceRegistrationException {
         return registerServiceMetrics.record(runnable);
     }
 
     @Override
-    public void unregisterService(Runnable runnable) {
+    public void unregisterService(ThrowingRunnable<? extends ServiceDeregistrationException> runnable) throws ServiceDeregistrationException {
         unregisterServiceMetrics.record(runnable);
     }
 
     @Override
-    public void updateCheck(Runnable runnable) {
+    public void updateCheck(ThrowingRunnable<? extends ServiceOperationException> runnable) throws ServiceOperationException{
         updateCheckMetrics.record(runnable);
     }
 
     @Override
-    public void unregisterCheck(Runnable runnable) {
+    public void unregisterCheck(ThrowingRunnable<? extends ServiceOperationException> runnable) throws ServiceOperationException{
         unregisterCheckMetrics.record(runnable);
     }
 
     @Override
-    public void registerCheck(Runnable runnable) {
+    public void registerCheck(ThrowingRunnable<? extends ServiceOperationException> runnable) throws ServiceOperationException{
         registerCheckMetrics.record(runnable);
     }
 }

@@ -2,6 +2,8 @@ package eu.xenit.nuntio.integration;
 
 import eu.xenit.nuntio.api.registry.CheckType;
 import eu.xenit.nuntio.api.registry.ServiceRegistry;
+import eu.xenit.nuntio.api.registry.errors.ServiceDeregistrationException;
+import eu.xenit.nuntio.api.registry.errors.ServiceOperationException;
 import eu.xenit.nuntio.engine.EngineProperties;
 import java.util.Arrays;
 import lombok.AllArgsConstructor;
@@ -27,17 +29,35 @@ public class NuntioApplicationShutdown implements ApplicationListener<ContextClo
             case UNREGISTER_SERVICES:
                 log.info("Shutting down application, unregistering all services.");
                 registry.findServices()
-                        .forEach(registry::unregisterService);
+                        .forEach(serviceIdentifier -> {
+                            try {
+                                registry.unregisterService(serviceIdentifier);
+                            } catch (ServiceDeregistrationException e) {
+                                log.error("Failed to unregister service {} during shutdown", serviceIdentifier, e);
+                            }
+                        });
                 break;
             case UNREGISTER_CHECKS:
                 log.info("Shutting down application, unregistering all checks.");
                 registry.findServices()
-                        .forEach(serviceIdentifier -> Arrays.stream(CheckType.values()).forEach(checkType -> registry.unregisterCheck(serviceIdentifier, checkType)));
+                        .forEach(serviceIdentifier -> Arrays.stream(CheckType.values()).forEach(checkType -> {
+                            try {
+                                registry.unregisterCheck(serviceIdentifier, checkType);
+                            } catch (ServiceOperationException e) {
+                                log.error("Failed to unregister service {} check {} during shutdown", serviceIdentifier, checkType, e);
+                            }
+                        }));
                 break;
             case UNREGISTER_HEARTBEAT:
                 log.info("Shutting down application, unregistering heartbeat check.");
                 registry.findServices()
-                        .forEach(serviceIdentifier -> registry.unregisterCheck(serviceIdentifier, CheckType.HEARTBEAT));
+                        .forEach(serviceIdentifier -> {
+                            try {
+                                registry.unregisterCheck(serviceIdentifier, CheckType.HEARTBEAT);
+                            } catch (ServiceOperationException e) {
+                                log.error("Failed to unregister service {} heartbeat during shutdown", serviceIdentifier, e);
+                            }
+                        });
                 break;
             case NOTHING:
                 log.info("Shutting down application, not unregistering anything.");

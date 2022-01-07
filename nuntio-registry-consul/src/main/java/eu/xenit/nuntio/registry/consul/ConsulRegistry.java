@@ -10,6 +10,9 @@ import eu.xenit.nuntio.api.registry.CheckType;
 import eu.xenit.nuntio.api.registry.RegistryServiceDescription;
 import eu.xenit.nuntio.api.registry.RegistryServiceIdentifier;
 import eu.xenit.nuntio.api.registry.ServiceRegistry;
+import eu.xenit.nuntio.api.registry.errors.ServiceDeregistrationException;
+import eu.xenit.nuntio.api.registry.errors.ServiceOperationException;
+import eu.xenit.nuntio.api.registry.errors.ServiceRegistrationException;
 import eu.xenit.nuntio.api.registry.metrics.RegistryMetrics;
 import eu.xenit.nuntio.registry.consul.ConsulProperties.CheckProperties;
 import eu.xenit.nuntio.registry.consul.checks.ConsulCheck;
@@ -64,7 +67,7 @@ public class ConsulRegistry implements ServiceRegistry {
     }
 
     @Override
-    public RegistryServiceIdentifier registerService(RegistryServiceDescription description) {
+    public RegistryServiceIdentifier registerService(RegistryServiceDescription description) throws ServiceRegistrationException {
         return registryMetrics.registerService(() -> {
             log.debug("Registering service {}", description);
 
@@ -84,9 +87,13 @@ public class ConsulRegistry implements ServiceRegistry {
 
             newService.setMeta(metadata);
 
-            log.trace("Consul service object: {}", newService);
-            consulClient.agentServiceRegister(newService, consulConfig.getToken());
-            log.debug("Registered service {}", description);
+            try {
+                log.trace("Consul service object: {}", newService);
+                consulClient.agentServiceRegister(newService, consulConfig.getToken());
+                log.debug("Registered service {}", description);
+            } catch(OperationException e) {
+                throw new ServiceRegistrationException(description, null, e);
+            }
 
 
             Set<NewCheck> checks = description.getChecks()
@@ -102,8 +109,12 @@ public class ConsulRegistry implements ServiceRegistry {
                     log.debug("Registered check {}", newCheck);
                 } catch(OperationException e) {
                     log.error("Failed to register check {}. Unregistering service and failing registration attempt.", newCheck, e);
-                    unregisterService(consulServiceIdentifier);
-                    throw new RuntimeException("Failed to register check for service.", e);
+                    try {
+                        unregisterService(consulServiceIdentifier);
+                    } catch(ServiceDeregistrationException e2) {
+                        log.error("Failed to unregister service {} because of a failed registration attempt.", consulServiceIdentifier, e2);
+                    }
+                    throw new ServiceRegistrationException(description, "Failed to register check for service.", e);
                 }
             }
             log.debug("Registered checks for service {}", description);
@@ -113,13 +124,18 @@ public class ConsulRegistry implements ServiceRegistry {
     }
 
     @Override
-    public void unregisterService(RegistryServiceIdentifier serviceIdentifier) {
+    public void unregisterService(RegistryServiceIdentifier serviceIdentifier) throws ServiceDeregistrationException {
         if (serviceIdentifier instanceof ConsulServiceIdentifier) {
             registryMetrics.unregisterService(() -> {
                 log.debug("Deregistering service {}", serviceIdentifier);
                 var consulServiceIdentifier = (ConsulServiceIdentifier) serviceIdentifier;
-                consulClient.agentServiceDeregister(consulServiceIdentifier.getServiceId(), consulConfig.getToken());
-                log.debug("Deregistered service {}", serviceIdentifier);
+                try {
+                    consulClient.agentServiceDeregister(consulServiceIdentifier.getServiceId(),
+                            consulConfig.getToken());
+                    log.debug("Deregistered service {}", serviceIdentifier);
+                } catch(OperationException e) {
+                    throw new ServiceDeregistrationException(serviceIdentifier, null, e);
+                }
             });
         }
     }
@@ -131,40 +147,50 @@ public class ConsulRegistry implements ServiceRegistry {
     }
 
     @Override
-    public void registerCheck(RegistryServiceIdentifier serviceIdentifier, CheckType checkType) {
+    public void registerCheck(RegistryServiceIdentifier serviceIdentifier, CheckType checkType)
+            throws ServiceOperationException {
         if (serviceIdentifier instanceof ConsulServiceIdentifier) {
             registryMetrics.registerCheck(() -> {
-            log.debug("Registering check {}:{}", serviceIdentifier, checkType);
-            var consulServiceIdentifier = (ConsulServiceIdentifier) serviceIdentifier;
-            NewCheck newCheck = new NewCheck();
+                log.debug("Registering check {}:{}", serviceIdentifier, checkType);
+                var consulServiceIdentifier = (ConsulServiceIdentifier) serviceIdentifier;
+                NewCheck newCheck = new NewCheck();
 
-            newCheck.setId(createCheckId(consulServiceIdentifier, checkType));
-            newCheck.setServiceId(consulServiceIdentifier.getServiceId());
-            newCheck.setName(checkType.getTitle());
-            newCheck.setNotes(checkType.getDescription());
+                newCheck.setId(createCheckId(consulServiceIdentifier, checkType));
+                newCheck.setServiceId(consulServiceIdentifier.getServiceId());
+                newCheck.setName(checkType.getTitle());
+                newCheck.setNotes(checkType.getDescription());
 
-            Optional<CheckProperties> checkConfig = Optional.ofNullable(consulConfig.getChecks().get(checkType));
-            checkConfig.map(CheckProperties::getTtl).ifPresent(newCheck::setTtl);
-            checkConfig.map(CheckProperties::getDeregisterCriticalServiceAfter)
-                    .ifPresent(newCheck::setDeregisterCriticalServiceAfter);
+                Optional<CheckProperties> checkConfig = Optional.ofNullable(consulConfig.getChecks().get(checkType));
+                checkConfig.map(CheckProperties::getTtl).ifPresent(newCheck::setTtl);
+                checkConfig.map(CheckProperties::getDeregisterCriticalServiceAfter)
+                        .ifPresent(newCheck::setDeregisterCriticalServiceAfter);
 
-            log.trace("Consul check object: {}", newCheck);
-            consulClient.agentCheckRegister(newCheck, consulConfig.getToken());
-            log.debug("Registered check {}:{}", serviceIdentifier, checkType);
+                log.trace("Consul check object: {}", newCheck);
+                try {
+                    consulClient.agentCheckRegister(newCheck, consulConfig.getToken());
+                    log.debug("Registered check {}:{}", serviceIdentifier, checkType);
+                } catch(OperationException e) {
+                    throw new ServiceOperationException(serviceIdentifier, "Failed to register check "+checkType, e);
+               }
             });
         }
     }
 
     @Override
-    public void unregisterCheck(RegistryServiceIdentifier serviceIdentifier, CheckType checkType) {
+    public void unregisterCheck(RegistryServiceIdentifier serviceIdentifier, CheckType checkType)
+            throws ServiceOperationException {
         if (serviceIdentifier instanceof ConsulServiceIdentifier) {
             registryMetrics.unregisterCheck(() -> {
                 if(checkExists((ConsulServiceIdentifier) serviceIdentifier, checkType)) {
                     log.debug("Deregistering check {}:{}", serviceIdentifier, checkType);
-                    consulClient.agentCheckDeregister(
-                            createCheckId((ConsulServiceIdentifier) serviceIdentifier, checkType),
-                            consulConfig.getToken());
-                    log.debug("Deregistered check {}:{}", serviceIdentifier, checkType);
+                    try {
+                        consulClient.agentCheckDeregister(
+                                createCheckId((ConsulServiceIdentifier) serviceIdentifier, checkType),
+                                consulConfig.getToken());
+                        log.debug("Deregistered check {}:{}", serviceIdentifier, checkType);
+                    } catch(OperationException e) {
+                        throw new ServiceOperationException(serviceIdentifier, "Failed to deregister check "+checkType, e);
+                    }
                 }
 
             });
@@ -173,25 +199,29 @@ public class ConsulRegistry implements ServiceRegistry {
 
     @Override
     public void updateCheck(RegistryServiceIdentifier serviceIdentifier, CheckType checkType, CheckStatus checkStatus,
-            String message) {
+            String message) throws ServiceOperationException {
         if (serviceIdentifier instanceof ConsulServiceIdentifier) {
             registryMetrics.updateCheck(() -> {
                 log.debug("Updating check {}:{} with {}", serviceIdentifier, checkType, checkStatus);
 
                 String checkId = createCheckId((ConsulServiceIdentifier) serviceIdentifier, checkType);
 
-                switch (checkStatus) {
-                    case FAILING:
-                        consulClient.agentCheckFail(checkId, message, consulConfig.getToken());
-                        break;
-                    case WARNING:
-                        consulClient.agentCheckWarn(checkId, message, consulConfig.getToken());
-                        break;
-                    case PASSING:
-                        consulClient.agentCheckPass(checkId, message, consulConfig.getToken());
-                        break;
+                try {
+                    switch (checkStatus) {
+                        case FAILING:
+                            consulClient.agentCheckFail(checkId, message, consulConfig.getToken());
+                            break;
+                        case WARNING:
+                            consulClient.agentCheckWarn(checkId, message, consulConfig.getToken());
+                            break;
+                        case PASSING:
+                            consulClient.agentCheckPass(checkId, message, consulConfig.getToken());
+                            break;
+                    }
+                    log.debug("Updated check {}:{} with {}", serviceIdentifier, checkType, checkStatus);
+                } catch(OperationException e) {
+                    throw new ServiceOperationException(serviceIdentifier, "Failed to update check "+checkType+" to "+checkStatus, e);
                 }
-                log.debug("Updated check {}:{} with {}", serviceIdentifier, checkType, checkStatus);
             });
         }
     }

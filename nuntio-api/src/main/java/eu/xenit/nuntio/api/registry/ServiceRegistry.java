@@ -1,6 +1,9 @@
 package eu.xenit.nuntio.api.registry;
 
 import eu.xenit.nuntio.api.identifier.PlatformIdentifier;
+import eu.xenit.nuntio.api.registry.errors.ServiceDeregistrationException;
+import eu.xenit.nuntio.api.registry.errors.ServiceOperationException;
+import eu.xenit.nuntio.api.registry.errors.ServiceRegistrationException;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -16,15 +19,15 @@ public interface ServiceRegistry {
                 .collect(Collectors.toSet());
     }
 
-    RegistryServiceIdentifier registerService(RegistryServiceDescription description);
+    RegistryServiceIdentifier registerService(RegistryServiceDescription description) throws ServiceRegistrationException;
 
-    void unregisterService(RegistryServiceIdentifier serviceIdentifier);
+    void unregisterService(RegistryServiceIdentifier serviceIdentifier) throws ServiceDeregistrationException;
 
-    void registerCheck(RegistryServiceIdentifier serviceIdentifier, CheckType checkType);
+    void registerCheck(RegistryServiceIdentifier serviceIdentifier, CheckType checkType) throws ServiceOperationException;
 
-    void unregisterCheck(RegistryServiceIdentifier serviceIdentifier, CheckType checkType);
+    void unregisterCheck(RegistryServiceIdentifier serviceIdentifier, CheckType checkType) throws ServiceOperationException;
 
     void updateCheck(RegistryServiceIdentifier serviceIdentifier, CheckType checkType, CheckStatus checkStatus,
-            String message);
+            String message) throws ServiceOperationException;
 
 }

@@ -8,6 +8,8 @@ import eu.xenit.nuntio.engine.availability.AvailabilityManager;
 import eu.xenit.nuntio.engine.diff.DiffResolver;
 import eu.xenit.nuntio.engine.diff.DiffService;
 import eu.xenit.nuntio.engine.diff.InitialRegistrationResolver;
+import eu.xenit.nuntio.engine.failure.FailureReporter;
+import eu.xenit.nuntio.engine.failure.NullFailureReporter;
 import eu.xenit.nuntio.engine.metrics.LiveWatchMetrics;
 import eu.xenit.nuntio.engine.metrics.DiffOperationMetrics;
 import eu.xenit.nuntio.engine.metrics.MetricsFactory;
@@ -16,6 +18,7 @@ import eu.xenit.nuntio.engine.postprocessor.RemoveDisabledAddressFamiliesPostPro
 import eu.xenit.nuntio.engine.postprocessor.RemoveStoppedPlatformsPostProcessor;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.List;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -72,17 +75,23 @@ public class EngineConfiguration {
     }
 
     @Bean
-    DiffResolver diffResolver(ServiceRegistry registry, EngineProperties engineProperties)  {
-        return new DiffResolver(registry, engineProperties);
+    DiffResolver diffResolver(ServiceRegistry registry, FailureReporter failureReporter, EngineProperties engineProperties)  {
+        return new DiffResolver(registry, failureReporter, engineProperties);
     }
 
     @Bean
-    InitialRegistrationResolver initialRegistrationResolver(ServiceRegistry registry, EngineProperties engineProperties) {
-        return new InitialRegistrationResolver(registry, engineProperties);
+    InitialRegistrationResolver initialRegistrationResolver(ServiceRegistry registry, FailureReporter failureReporter, EngineProperties engineProperties) {
+        return new InitialRegistrationResolver(registry, failureReporter, engineProperties);
     }
 
     @Bean
     MetricsFactory metricsFactory(MeterRegistry meterRegistry) {
         return new MetricsFactory(meterRegistry);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    FailureReporter nullFailureReporter() {
+        return new NullFailureReporter();
     }
 }
