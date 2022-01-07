@@ -9,14 +9,8 @@ import org.springframework.context.annotation.Import;
 
 @SpringBootApplication
 @EnableNuntio
-@Import({
-        DockerConfiguration.class,
-        ConsulConfiguration.class
-})
 public class NuntioCoreApplication {
-
     public static void main(String[] args) {
         SpringApplication.run(NuntioCoreApplication.class);
     }
-
 }
