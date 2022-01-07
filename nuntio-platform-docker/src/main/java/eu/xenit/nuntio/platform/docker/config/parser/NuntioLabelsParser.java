@@ -37,6 +37,7 @@ import lombok.extern.slf4j.Slf4j;
  * * nuntio/80/service
  * * nuntio/tcp:80/tags
  * * nuntio/udp:65/metadata/my-metadata
+ * * nuntio/check/my-check/type
  */
 @Slf4j
 @AllArgsConstructor

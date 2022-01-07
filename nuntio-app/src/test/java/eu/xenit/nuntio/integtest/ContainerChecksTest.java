@@ -20,6 +20,7 @@ import eu.xenit.nuntio.integtest.containers.NuntioContainer;
 import eu.xenit.nuntio.integtest.containers.RegistratorContainer;
 import eu.xenit.nuntio.integtest.jupiter.annotations.CompatTest;
 import eu.xenit.nuntio.integtest.jupiter.annotations.ContainerTests;
+import eu.xenit.nuntio.integtest.jupiter.annotations.NuntioTest;
 import eu.xenit.nuntio.integtest.util.SimpleContainerModifier;
 import java.util.List;
 import java.util.Map.Entry;
@@ -176,5 +177,24 @@ public class ContainerChecksTest extends ContainerBaseTest {
         assertThat(waitForCheckOutput(httpChecks125.get(0).get("CheckID").getAsString()).getOutput(), stringContainsInOrder("http://", "/healtz"));
         var tcpChecks125 = getAgentChecks(new SingleUrlParameters("filter", "ServiceName==\"myservice-125\""), "tcp");
         assertThat(tcpChecks125, hasSize(0));
+    }
+
+    @NuntioTest
+    void nuntioLabelTest(ConsulClient consulClient, DockerClient dockerClient) {
+        CreateContainerResponse serviceContainer = createContainer(
+                SimpleContainerModifier.withPortBinding(ExposedPort.tcp(123), Binding.bindIp("127.0.0.1"))
+                        .andThen(SimpleContainerModifier.withLabel("nuntio.xenit.eu/service", "test-service"))
+                        .andThen(SimpleContainerModifier.withLabel("nuntio.xenit.eu/check/health/type", "http"))
+                        .andThen(SimpleContainerModifier.withLabel("nuntio.xenit.eu/check/health/interval", "30s"))
+                        .andThen(SimpleContainerModifier.withLabel("nuntio.xenit.eu/check/health/path", "/health"))
+        );
+
+        dockerClient.startContainerCmd(serviceContainer.getId()).exec();
+
+        await.until(consulWaiter().serviceExists("test-service"));
+
+        var httpChecks = getAgentChecks(new SingleUrlParameters("filter", "ServiceName==\"test-service\""), "http");
+        assertThat(httpChecks, hasSize(1));
+        assertThat(waitForCheckOutput(httpChecks.get(0).get("CheckID").getAsString()).getOutput(), stringContainsInOrder("https://", "/health"));
     }
 }
