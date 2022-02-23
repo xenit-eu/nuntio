@@ -36,7 +36,9 @@ public class InspectContainerMetadata implements ContainerMetadata {
             environmentVars = new HashMap<>(environmentVarsStr.length);
             for (String environmentVar : environmentVarsStr) {
                 String[] parts = environmentVar.split("=", 2);
-                environmentVars.put(parts[0], parts[1]);
+                if(parts.length == 2) {
+                    environmentVars.put(parts[0], parts[1]);
+                }
             }
             return environmentVars;
         }
