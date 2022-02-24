@@ -11,6 +11,7 @@ import com.github.dockerjava.api.model.NetworkSettings;
 import com.github.dockerjava.api.model.Ports;
 import com.github.dockerjava.api.model.Ports.Binding;
 import eu.xenit.nuntio.api.platform.ServiceBinding;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
@@ -74,6 +75,13 @@ class InspectContainerMetadataTest {
                 "EMPTY", "",
                 "triple", "equals=sign"
         ), inspectContainerMetadata.getEnvironment());
+    }
+
+    @Test
+    void noPorts() {
+        when(networkSettings.getPorts()).thenReturn(null);
+
+        assertEquals(Collections.emptySet(), inspectContainerMetadata.getInternalPortBindings());
     }
 
 }
