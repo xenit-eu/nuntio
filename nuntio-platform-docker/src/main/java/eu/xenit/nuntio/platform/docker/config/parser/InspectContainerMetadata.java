@@ -1,10 +1,13 @@
 package eu.xenit.nuntio.platform.docker.config.parser;
 
+import com.github.dockerjava.api.model.NetworkSettings;
+import com.github.dockerjava.api.model.Ports;
 import eu.xenit.nuntio.api.platform.ServiceBinding;
 import com.github.dockerjava.api.command.InspectContainerResponse;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
@@ -21,9 +24,11 @@ public class InspectContainerMetadata implements ContainerMetadata {
 
     @Override
     public Set<ServiceBinding> getInternalPortBindings() {
-        return inspectContainerResponse.getNetworkSettings().getPorts()
-                .getBindings()
-                .keySet()
+        return Optional.ofNullable(inspectContainerResponse.getNetworkSettings())
+                .map(NetworkSettings::getPorts)
+                .map(Ports::getBindings)
+                .map(Map::keySet)
+                .orElse(Collections.emptySet())
                 .stream()
                 .map(exposedPort -> ServiceBinding.fromPortAndProtocol(exposedPort.getPort(), exposedPort.getProtocol().toString()))
                 .collect(Collectors.toSet());
