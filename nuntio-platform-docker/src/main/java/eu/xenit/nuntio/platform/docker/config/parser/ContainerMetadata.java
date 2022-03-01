@@ -8,7 +8,8 @@ public interface ContainerMetadata {
 
     String getImageName();
 
-    Set<ServiceBinding> getInternalPortBindings();
+    Set<ServiceBinding> getExposedPortBindings();
+    Set<ServiceBinding> getPublishedPortBindings();
 
     Map<String, String> getEnvironment();
 

@@ -2,6 +2,8 @@ package eu.xenit.nuntio.platform.docker.config.parser;
 
 import eu.xenit.nuntio.api.platform.PlatformServiceConfiguration;
 import eu.xenit.nuntio.api.platform.ServiceBinding;
+import eu.xenit.nuntio.platform.docker.DockerProperties;
+import eu.xenit.nuntio.platform.docker.DockerProperties.PortBindConfiguration;
 import eu.xenit.nuntio.platform.docker.DockerProperties.RegistratorCompatibleProperties;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -13,17 +15,20 @@ import java.util.function.Predicate;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 /**
  * Parser implementation that follows Gliderlabs' Registrator rules
  *
- * @see <a href="https://gliderlabs.github.io/registrator/latest/user/services/">Registrator User Guide - Service
+ * @see <a href="https://gliderlabs.github.io/registrator/latest/user/services/">Registrator User Guide - Service</a>
  */
 @Slf4j
 @AllArgsConstructor
 public class RegistratorCompatibleParser implements ServiceConfigurationParser {
 
+    @Setter(AccessLevel.PACKAGE)
+    PortBindConfiguration portBindConfiguration;
     RegistratorCompatibleProperties registratorCompatibleProperties;
 
     @Override
@@ -32,10 +37,11 @@ public class RegistratorCompatibleParser implements ServiceConfigurationParser {
         configuration.putAll(containerMetadata.getEnvironment());
         configuration.putAll(containerMetadata.getLabels());
 
-        boolean hasMultipleBindings = containerMetadata.getInternalPortBindings().size() > 1;
+        Set<ServiceBinding> serviceBindings = portBindConfiguration == PortBindConfiguration.INTERNAL?containerMetadata.getExposedPortBindings():containerMetadata.getPublishedPortBindings();
+        boolean hasMultipleBindings = serviceBindings.size() > 1;
 
         Set<PlatformServiceConfiguration> platformServiceConfigurations = new HashSet<>();
-        for(ServiceBinding serviceBinding: containerMetadata.getInternalPortBindings()) {
+        for(ServiceBinding serviceBinding: serviceBindings) {
             // If SERVICE_<port>_IGNORE or SERVICE_IGNORE is present and not empty, disregard this service
             boolean isIgnore = findValueWithFallback(ConfigKind.IGNORE, serviceBinding, configuration)
                     .filter(Predicate.not(String::isEmpty))

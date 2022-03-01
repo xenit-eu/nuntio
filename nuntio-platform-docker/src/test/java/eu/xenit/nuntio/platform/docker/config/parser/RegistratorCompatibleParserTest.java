@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import eu.xenit.nuntio.api.platform.PlatformServiceConfiguration;
 import eu.xenit.nuntio.api.platform.ServiceBinding;
+import eu.xenit.nuntio.platform.docker.DockerProperties.PortBindConfiguration;
 import eu.xenit.nuntio.platform.docker.DockerProperties.RegistratorCompatibleProperties;
 import java.util.Collections;
 import java.util.Set;
@@ -15,12 +16,12 @@ class RegistratorCompatibleParserTest {
 
 
     private RegistratorCompatibleProperties registratorCompatibleProperties;
-    private ServiceConfigurationParser configurationParser;
+    private RegistratorCompatibleParser configurationParser;
 
     @BeforeEach
     void setUp() {
         registratorCompatibleProperties = new RegistratorCompatibleProperties();
-        configurationParser = new RegistratorCompatibleParser(registratorCompatibleProperties);
+        configurationParser = new RegistratorCompatibleParser(PortBindConfiguration.PUBLISHED, registratorCompatibleProperties);
     }
 
     @Test
@@ -28,7 +29,7 @@ class RegistratorCompatibleParserTest {
         // docker run -d --name redis.0 -p 10000:6379 progrium/redis
         var desc = SimpleContainerMetadata.builder()
                 .imageName("progrium/redis")
-                .internalPortBinding(ServiceBinding.fromPort(6379))
+                .publishedPortBinding(ServiceBinding.fromPort(6379))
                 .build();
 
         var service = configurationParser.toServiceConfigurations(desc);
@@ -52,7 +53,7 @@ class RegistratorCompatibleParserTest {
         // docker run -d --name redis.0 -p 10000:6379 progrium/redis
         var desc = SimpleContainerMetadata.builder()
                 .imageName("progrium/redis")
-                .internalPortBinding(ServiceBinding.fromPort(6379))
+                .publishedPortBinding(ServiceBinding.fromPort(6379))
                 .build();
 
         var service = configurationParser.toServiceConfigurations(desc);
@@ -68,7 +69,7 @@ class RegistratorCompatibleParserTest {
                 .environment("SERVICE_NAME", "db")
                 .environment("SERVICE_TAGS", "master,backups")
                 .environment("SERVICE_REGION", "us2")
-                .internalPortBinding(ServiceBinding.fromPort(6379))
+                .publishedPortBinding(ServiceBinding.fromPort(6379))
                 .build();
 
         var service = configurationParser.toServiceConfigurations(desc);
@@ -92,8 +93,8 @@ class RegistratorCompatibleParserTest {
         // $ docker run -d --name nginx.0 -p 4443:443 -p 8000:80 progrium/nginx
         var desc = SimpleContainerMetadata.builder()
                 .imageName("progrium/redis")
-                .internalPortBinding(ServiceBinding.fromPort(443))
-                .internalPortBinding(ServiceBinding.fromPort(80))
+                .publishedPortBinding(ServiceBinding.fromPort(443))
+                .publishedPortBinding(ServiceBinding.fromPort(80))
                 .build();
         var service = configurationParser.toServiceConfigurations(desc);
 
@@ -114,6 +115,82 @@ class RegistratorCompatibleParserTest {
     }
 
     @Test
+    void multipleServices_withOneServiceName() {
+        // $ docker run -d --label SERVICE_NAME=bla -p 4443:443 -p 8000:80 progrium/redis
+        var desc = SimpleContainerMetadata.builder()
+                .imageName("progrium/redis")
+                .label("SERVICE_NAME", "bla")
+                .publishedPortBinding(ServiceBinding.fromPort(443))
+                .publishedPortBinding(ServiceBinding.fromPort(80))
+                .build();
+        var service = configurationParser.toServiceConfigurations(desc);
+
+        assertEquals(
+                Set.of(
+                        PlatformServiceConfiguration.builder()
+                                .serviceName("bla-443")
+                                .serviceBinding(ServiceBinding.fromPort(443))
+                                .build(),
+
+                        PlatformServiceConfiguration.builder()
+                                .serviceName("bla-80")
+                                .serviceBinding(ServiceBinding.fromPort(80))
+                                .build()
+                ),
+                service
+        );
+    }
+
+    @Test
+    void multipleServices_oneExposed_withOneServiceName() {
+        // $ docker run -d --label SERVICE_NAME=bla --expose 443 -p 8000:80 progrium/redis
+        var desc = SimpleContainerMetadata.builder()
+                .imageName("progrium/redis")
+                .label("SERVICE_NAME", "bla")
+                .exposedPortBinding(ServiceBinding.fromPort(443))
+                .publishedPortBinding(ServiceBinding.fromPort(80))
+                .build();
+        var service = configurationParser.toServiceConfigurations(desc);
+
+        assertEquals(
+                Set.of(
+                        PlatformServiceConfiguration.builder()
+                                .serviceName("bla")
+                                .serviceBinding(ServiceBinding.fromPort(80))
+                                .build()
+                ),
+                service
+        );
+    }
+
+    @Test
+    void multipleServices_oneExposed_withOneServiceName_publishInternal() {
+        configurationParser.setPortBindConfiguration(PortBindConfiguration.INTERNAL);
+        // $ docker run -d --label SERVICE_NAME=bla  --expose 443 -p 8000:80 progrium/redis
+        var desc = SimpleContainerMetadata.builder()
+                .imageName("progrium/redis")
+                .label("SERVICE_NAME", "bla")
+                .exposedPortBinding(ServiceBinding.fromPort(443))
+                .publishedPortBinding(ServiceBinding.fromPort(80))
+                .build();
+        var service = configurationParser.toServiceConfigurations(desc);
+
+        assertEquals(
+                Set.of(
+                        PlatformServiceConfiguration.builder()
+                                .serviceName("bla-443")
+                                .serviceBinding(ServiceBinding.fromPort(443))
+                                .build(),
+                        PlatformServiceConfiguration.builder()
+                                .serviceName("bla-80")
+                                .serviceBinding(ServiceBinding.fromPort(80))
+                                .build()
+                ),
+                service
+        );
+    }
+
+    @Test
     void multipleServices_withMetadata() {
         // $ docker run -d --name nginx.0 -p 4443:443 -p 8000:80 \
         //            -e "SERVICE_443_NAME=https" \
@@ -124,8 +201,8 @@ class RegistratorCompatibleParserTest {
 
         var desc = SimpleContainerMetadata.builder()
                 .imageName("progrium/redis")
-                .internalPortBinding(ServiceBinding.fromPort(443))
-                .internalPortBinding(ServiceBinding.fromPort(80))
+                .publishedPortBinding(ServiceBinding.fromPort(443))
+                .publishedPortBinding(ServiceBinding.fromPort(80))
                 .environment("SERVICE_443_NAME", "https")
                 .environment("SERVICE_443_ID", "https.12345")
                 .environment("SERVICE_443_SNI", "enabled")
@@ -166,8 +243,8 @@ class RegistratorCompatibleParserTest {
 
         var desc = SimpleContainerMetadata.builder()
                 .imageName("progrium/redis")
-                .internalPortBinding(ServiceBinding.fromPort(443))
-                .internalPortBinding(ServiceBinding.fromPort(80))
+                .publishedPortBinding(ServiceBinding.fromPort(443))
+                .publishedPortBinding(ServiceBinding.fromPort(80))
                 .environment("SERVICE_443_NAME", "https")
                 .environment("SERVICE_443_ID", "https.12345")
                 .environment("SERVICE_443_SNI", "enabled")
@@ -202,7 +279,7 @@ class RegistratorCompatibleParserTest {
         public void explicitServiceName() {
             var redis = SimpleContainerMetadata.builder()
                     .imageName("progrium/redis")
-                    .internalPortBinding(ServiceBinding.fromPort(8000))
+                    .publishedPortBinding(ServiceBinding.fromPort(8000))
                     .environment("SERVICE_NAME", "redis")
                     .build();
 
@@ -220,7 +297,7 @@ class RegistratorCompatibleParserTest {
         public void defaultServiceName() {
             var redis = SimpleContainerMetadata.builder()
                     .imageName("progrium/redis")
-                    .internalPortBinding(ServiceBinding.fromPort(8000))
+                    .publishedPortBinding(ServiceBinding.fromPort(8000))
                     .build();
 
             var services = configurationParser.toServiceConfigurations(redis);
@@ -237,7 +314,7 @@ class RegistratorCompatibleParserTest {
         public void withLabel() {
             var redis = SimpleContainerMetadata.builder()
                     .imageName("progrium/redis:1.2.3")
-                    .internalPortBinding(ServiceBinding.fromPort(8000))
+                    .publishedPortBinding(ServiceBinding.fromPort(8000))
                     .build();
 
             var services = configurationParser.toServiceConfigurations(redis);
@@ -254,7 +331,7 @@ class RegistratorCompatibleParserTest {
         public void withoutNamespace() {
             var redis = SimpleContainerMetadata.builder()
                     .imageName("redis:1.2.3")
-                    .internalPortBinding(ServiceBinding.fromPort(8000))
+                    .publishedPortBinding(ServiceBinding.fromPort(8000))
                     .build();
 
             var services = configurationParser.toServiceConfigurations(redis);
@@ -271,7 +348,7 @@ class RegistratorCompatibleParserTest {
         public void withHostname() {
             var redis = SimpleContainerMetadata.builder()
                     .imageName("docker.io/progrium/redis")
-                    .internalPortBinding(ServiceBinding.fromPort(8000))
+                    .publishedPortBinding(ServiceBinding.fromPort(8000))
                     .build();
 
             var services = configurationParser.toServiceConfigurations(redis);
@@ -289,7 +366,7 @@ class RegistratorCompatibleParserTest {
             var redis = SimpleContainerMetadata.builder()
                     .imageName("docker.io/progrium/redis")
                     .environment("SERVICE_NAME", "")
-                    .internalPortBinding(ServiceBinding.fromPort(8000))
+                    .publishedPortBinding(ServiceBinding.fromPort(8000))
                     .build();
 
             var services = configurationParser.toServiceConfigurations(redis);
@@ -311,7 +388,7 @@ class RegistratorCompatibleParserTest {
         void withDefault() {
             var redis = SimpleContainerMetadata.builder()
                     .imageName("progrium/redis")
-                    .internalPortBinding(ServiceBinding.fromPort(8080))
+                    .publishedPortBinding(ServiceBinding.fromPort(8080))
                     .environment("SERVICE_FOO", "foo")
                     .environment("SERVICE_BAR", "bar")
                     .build();
@@ -332,7 +409,7 @@ class RegistratorCompatibleParserTest {
         void withPort() {
             var redis = SimpleContainerMetadata.builder()
                     .imageName("progrium/redis")
-                    .internalPortBinding(ServiceBinding.fromPort(8080))
+                    .publishedPortBinding(ServiceBinding.fromPort(8080))
                     .environment("SERVICE_FOO", "fail")
                     .environment("SERVICE_BAR", "fail")
                     .environment("SERVICE_8080_FOO", "ok")
@@ -355,8 +432,8 @@ class RegistratorCompatibleParserTest {
         void blankName() {
             var redis = SimpleContainerMetadata.builder()
                     .imageName("progrium/redis")
-                    .internalPortBinding(ServiceBinding.fromPort(8080))
-                    .internalPortBinding(ServiceBinding.fromPort(8081))
+                    .publishedPortBinding(ServiceBinding.fromPort(8080))
+                    .publishedPortBinding(ServiceBinding.fromPort(8081))
                     .environment("SERVICE_", "empty")
                     .environment("SERVICE_8080_", "empty")
                     .build();
@@ -386,8 +463,8 @@ class RegistratorCompatibleParserTest {
         void globalIgnore() {
             var redis = SimpleContainerMetadata.builder()
                     .imageName("progrium/redis")
-                    .internalPortBinding(ServiceBinding.fromPort(8080))
-                    .internalPortBinding(ServiceBinding.fromPort(8081))
+                    .publishedPortBinding(ServiceBinding.fromPort(8080))
+                    .publishedPortBinding(ServiceBinding.fromPort(8081))
                     .environment("SERVICE_IGNORE", "true")
                     .build();
 
@@ -399,8 +476,8 @@ class RegistratorCompatibleParserTest {
         void globalIgnoreEmpty() {
             var redis = SimpleContainerMetadata.builder()
                     .imageName("progrium/redis")
-                    .internalPortBinding(ServiceBinding.fromPort(8080))
-                    .internalPortBinding(ServiceBinding.fromPort(8081))
+                    .publishedPortBinding(ServiceBinding.fromPort(8080))
+                    .publishedPortBinding(ServiceBinding.fromPort(8081))
                     .environment("SERVICE_IGNORE", "")
                     .build();
 
@@ -423,8 +500,8 @@ class RegistratorCompatibleParserTest {
         void servicePortIgnore() {
             var redis = SimpleContainerMetadata.builder()
                     .imageName("progrium/redis")
-                    .internalPortBinding(ServiceBinding.fromPort(8080))
-                    .internalPortBinding(ServiceBinding.fromPort(8081))
+                    .publishedPortBinding(ServiceBinding.fromPort(8080))
+                    .publishedPortBinding(ServiceBinding.fromPort(8081))
                     .environment("SERVICE_8080_IGNORE", "1")
                     .build();
 
@@ -442,8 +519,8 @@ class RegistratorCompatibleParserTest {
         void globalIgnoreWithServiceName() {
             var redis = SimpleContainerMetadata.builder()
                     .imageName("progrium/redis")
-                    .internalPortBinding(ServiceBinding.fromPort(8080))
-                    .internalPortBinding(ServiceBinding.fromPort(8081))
+                    .publishedPortBinding(ServiceBinding.fromPort(8080))
+                    .publishedPortBinding(ServiceBinding.fromPort(8081))
                     .environment("SERVICE_IGNORE", "1")
                     .environment("SERVICE_8081_NAME", "xyz")
                     .build();

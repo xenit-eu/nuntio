@@ -7,6 +7,7 @@ import com.github.dockerjava.api.command.InspectContainerResponse;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -23,11 +24,28 @@ public class InspectContainerMetadata implements ContainerMetadata {
     }
 
     @Override
-    public Set<ServiceBinding> getInternalPortBindings() {
+    public Set<ServiceBinding> getExposedPortBindings() {
         return Optional.ofNullable(inspectContainerResponse.getNetworkSettings())
                 .map(NetworkSettings::getPorts)
                 .map(Ports::getBindings)
                 .map(Map::keySet)
+                .orElse(Collections.emptySet())
+                .stream()
+                .map(exposedPort -> ServiceBinding.fromPortAndProtocol(exposedPort.getPort(), exposedPort.getProtocol().toString()))
+                .collect(Collectors.toSet());
+    }
+
+    @Override
+    public Set<ServiceBinding> getPublishedPortBindings() {
+        return Optional.ofNullable(inspectContainerResponse.getNetworkSettings())
+                .map(NetworkSettings::getPorts)
+                .map(Ports::getBindings)
+                .map(exposedPortMap -> exposedPortMap.entrySet()
+                        .stream()
+                        .filter(entry -> entry.getValue() != null && entry.getValue().length > 0)
+                        .map(Entry::getKey)
+                        .collect(Collectors.toUnmodifiableSet())
+                )
                 .orElse(Collections.emptySet())
                 .stream()
                 .map(exposedPort -> ServiceBinding.fromPortAndProtocol(exposedPort.getPort(), exposedPort.getProtocol().toString()))
