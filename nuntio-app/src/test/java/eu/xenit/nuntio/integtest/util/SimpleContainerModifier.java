@@ -35,9 +35,8 @@ public interface SimpleContainerModifier extends Consumer<CreateContainerCmd> {
     }
 
     static SimpleContainerModifier withPortBinding(ExposedPort exposedPort, Binding binding) {
-        return AddHostConfig.INSTANCE
+        return withExposedPort(exposedPort)
                 .andThen(createContainerCmd -> {
-                    createContainerCmd.withExposedPorts(appendItem(createContainerCmd.getExposedPorts(), exposedPort));
                     createContainerCmd.getHostConfig().getPortBindings().bind(exposedPort, binding);
                 });
     }
@@ -87,6 +86,12 @@ public interface SimpleContainerModifier extends Consumer<CreateContainerCmd> {
     static SimpleContainerModifier withRestartPolicy(RestartPolicy restartPolicy) {
         return AddHostConfig.INSTANCE.andThen(createContainerCmd -> {
             createContainerCmd.getHostConfig().withRestartPolicy(restartPolicy);
+        });
+    }
+
+    static SimpleContainerModifier withExposedPort(ExposedPort exposedPort) {
+        return AddHostConfig.INSTANCE.andThen(createContainerCmd -> {
+            createContainerCmd.withExposedPorts(appendItem(createContainerCmd.getExposedPorts(), exposedPort));
         });
     }
 }

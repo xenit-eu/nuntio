@@ -48,6 +48,7 @@ class InspectContainerMetadataTest {
         Ports ports = new Ports();
         ports.bind(ExposedPort.tcp(80), Binding.bindIp("127.0.0.2"));
         ports.bind(ExposedPort.udp(53), Binding.bindPort(53));
+        ports.bind(ExposedPort.tcp(81), null);
         when(networkSettings.getPorts()).thenReturn(ports);
 
 
@@ -57,9 +58,14 @@ class InspectContainerMetadataTest {
 
         assertEquals(Set.of(
                 ServiceBinding.fromPort(80),
+                ServiceBinding.fromPort(81),
                 ServiceBinding.fromPortAndProtocol(53, "udp")
-        ), inspectContainerMetadata.getInternalPortBindings());
+        ), inspectContainerMetadata.getExposedPortBindings());
 
+        assertEquals(Set.of(
+                ServiceBinding.fromPort(80),
+                ServiceBinding.fromPortAndProtocol(53, "udp")
+        ), inspectContainerMetadata.getPublishedPortBindings());
     }
 
     @Test
@@ -81,7 +87,8 @@ class InspectContainerMetadataTest {
     void noPorts() {
         when(networkSettings.getPorts()).thenReturn(null);
 
-        assertEquals(Collections.emptySet(), inspectContainerMetadata.getInternalPortBindings());
+        assertEquals(Collections.emptySet(), inspectContainerMetadata.getExposedPortBindings());
+        assertEquals(Collections.emptySet(), inspectContainerMetadata.getPublishedPortBindings());
     }
 
 }

@@ -230,6 +230,38 @@ public class ContainerRegistrationTest extends ContainerBaseTest {
     }
 
     @CompatTest
+    void exposedMappedPorts(DockerClient dockerClient, ConsulClient consulClient, RegistrationContainer registrationContainer) {
+        CreateContainerResponse createContainer = createContainer(SimpleContainerModifier.withPortBinding(ExposedPort.tcp(123), Binding.empty())
+                .andThen(SimpleContainerModifier.withExposedPort(ExposedPort.tcp(456)))
+                .andThen(SimpleContainerModifier.withEnvVar("SERVICE_NAME", "mont-blanc"))
+        );
+
+        dockerClient.startContainerCmd(createContainer.getId()).exec();
+
+        if(!registrationContainer.isInternalPorts()) {
+            await.until(consulWaiter().serviceExists("mont-blanc"));
+        } else {
+            await.until(consulWaiter().serviceExists("mont-blanc-123"));
+        }
+
+        var services = consulClient.getCatalogServices(CatalogServicesRequest.newBuilder().build()).getValue();
+
+        if(!registrationContainer.isInternalPorts()) {
+            assertThat(services, allOf(
+                    hasKey("mont-blanc"),
+                    not(hasKey("mont-blanc-456")),
+                    not(hasKey("mont-blanc-123"))
+            ));
+        } else {
+            assertThat(services, allOf(
+                    not(hasKey("mont-blanc")),
+                    hasKey("mont-blanc-456"),
+                    hasKey("mont-blanc-123")
+            ));
+        }
+    }
+
+    @CompatTest
     void ignore(DockerClient dockerClient, ConsulClient consulClient, RegistrationContainer container) {
         CreateContainerResponse myOtherServiceContainer = createContainer(
                 SimpleContainerModifier.withPortBinding(ExposedPort.tcp(123), Binding.bindIp("127.0.0.1"))
