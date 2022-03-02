@@ -11,7 +11,9 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.Value;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class FakeServiceRegistry implements ServiceRegistry {
 
     private final Map<FakeServiceIdentifier, RegistryServiceDescription> services = new HashMap<>();
@@ -40,7 +42,12 @@ public class FakeServiceRegistry implements ServiceRegistry {
     @Override
     public RegistryServiceIdentifier registerService(RegistryServiceDescription description) {
         FakeServiceIdentifier serviceIdentifier = FakeServiceIdentifier.create(description);
-        services.put(serviceIdentifier, description);
+        var replacedService = services.put(serviceIdentifier, description);
+        if(replacedService != null) {
+            log.info("Register service {} (replaces {})", description, replacedService);
+        } else {
+            log.info("Registered new service {}", description);
+        }
         return serviceIdentifier;
     }
 
@@ -52,7 +59,12 @@ public class FakeServiceRegistry implements ServiceRegistry {
             unregisterCheck(serviceIdentifier, check.getType());
         });
 
-        services.remove(serviceIdentifier);
+        var removedService = services.remove(serviceIdentifier);
+        if(removedService != null) {
+            log.info("Deregister service {}", removedService);
+        } else {
+            log.warn("Attempt to deregister service {}, but it does not exist", serviceIdentifier);
+        }
     }
 
     @Override
@@ -76,6 +88,7 @@ public class FakeServiceRegistry implements ServiceRegistry {
         if(!checks.containsKey(checkKey)) {
             throw new IllegalStateException("Updating a check that is not first registered is not possible: "+checkKey);
         }
+        log.debug("Update service check {} to status {}", checkKey, checkStatus);
         checks.replace(checkKey, new CheckValue(checkStatus, message));
     }
 
