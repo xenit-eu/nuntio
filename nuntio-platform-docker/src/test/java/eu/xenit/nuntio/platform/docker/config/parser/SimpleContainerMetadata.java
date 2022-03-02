@@ -12,6 +12,7 @@ import lombok.Value;
 @Value
 @Builder
 public class SimpleContainerMetadata implements ContainerMetadata{
+    String containerName;
     String imageName;
     @Singular
     Set<ServiceBinding> exposedPortBindings;
