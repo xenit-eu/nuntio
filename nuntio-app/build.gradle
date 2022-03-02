@@ -13,6 +13,7 @@ plugins {
 dependencies {
     implementation project(':nuntio-integration')
     implementation project(':nuntio-platform-docker')
+    implementation project(':nuntio-platform-fake')
     implementation project(':nuntio-registry-consul')
     implementation project(':nuntio-registry-fake')
     implementation 'org.springframework.boot:spring-boot-starter'
