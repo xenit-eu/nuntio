@@ -38,6 +38,7 @@ public class RegistratorCompatibleParser implements ServiceConfigurationParser {
         configuration.putAll(containerMetadata.getLabels());
 
         Set<ServiceBinding> serviceBindings = portBindConfiguration == PortBindConfiguration.INTERNAL?containerMetadata.getExposedPortBindings():containerMetadata.getPublishedPortBindings();
+        log.debug("Container {} has relevant service bindings {}", containerMetadata, serviceBindings);
         boolean hasMultipleBindings = serviceBindings.size() > 1;
 
         Set<PlatformServiceConfiguration> platformServiceConfigurations = new HashSet<>();
@@ -69,6 +70,11 @@ public class RegistratorCompatibleParser implements ServiceConfigurationParser {
                 continue;
             }
             String serviceName = maybeServiceName.orElseGet(() -> extractImageBaseName(containerMetadata.getImageName()) + defaultServiceNameSuffix);
+            if(maybeServiceName.isEmpty()) {
+                log.debug("Automatically set service name of container {} with binding {} to {} based on image name", containerMetadata, serviceBinding, serviceName);
+            } else {
+                log.debug("Service name for container {} with binding {} is {}", containerMetadata, serviceBinding, serviceName);
+            }
 
             platformServiceBuilder.serviceName(serviceName);
 
