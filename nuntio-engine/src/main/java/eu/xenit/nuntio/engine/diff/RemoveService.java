@@ -6,5 +6,4 @@ import lombok.Value;
 @Value
 public class RemoveService implements Diff {
     RegistryServiceIdentifier registryServiceIdentifier;
-    RegistryServiceDescription registryServiceDescription;
 }
