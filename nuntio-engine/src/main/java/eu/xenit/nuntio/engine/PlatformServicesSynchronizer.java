@@ -23,7 +23,7 @@ public class PlatformServicesSynchronizer {
     private final DiffOperationMetrics syncMetrics;
 
     public void syncServices() {
-        diffService.diff(registry.findServices(), platform.findAll())
+        diffService.diff(registry.findServiceDescriptions(), platform.findAll())
                 .peek(syncMetrics)
                 .peek(diff -> {
                     diff.cast(AddService.class).ifPresent(addService -> {

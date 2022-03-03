@@ -13,6 +13,7 @@ import eu.xenit.nuntio.engine.EngineProperties;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -32,6 +33,13 @@ public class DiffResolver implements Consumer<Diff> {
         });
 
         diff.cast(EqualService.class).ifPresent(equalService -> {
+            var doesNotHaveExactCurrentService = getRegistryServiceDescriptionStream(equalService.getDescription(),
+                    equalService.getServiceConfiguration())
+                    .noneMatch(Predicate.isEqual(equalService.getRegistryServiceDescription()));
+            if(doesNotHaveExactCurrentService) {
+                registry.unregisterService(equalService.getRegistryServiceIdentifier());
+                registerService(equalService.getDescription(), equalService.getServiceConfiguration());
+            }
             updateServiceChecks(equalService.getDescription(), equalService.getServiceConfiguration(), equalService.getRegistryServiceIdentifier());
         });
 
@@ -41,20 +49,7 @@ public class DiffResolver implements Consumer<Diff> {
     }
 
     private void registerService(PlatformServiceDescription platformServiceDescription, PlatformServiceConfiguration platformServiceConfiguration) {
-        platformServiceConfiguration.getServiceNames().stream()
-                .peek(serviceName -> log.debug("Creating registry service {} for platform {}", serviceName,
-                        platformServiceConfiguration))
-                .map(serviceName -> RegistryServiceDescription.builder()
-                        .name(serviceName)
-                        .platformIdentifier(platformServiceDescription.getIdentifier().getPlatformIdentifier())
-                        .serviceIdentifier(ServiceIdentifier.of(platformServiceDescription.getIdentifier()
-                                .getPlatformIdentifier(), platformServiceConfiguration.getServiceBinding()))
-                        .address(platformServiceConfiguration.getServiceBinding().getIp())
-                        .port(platformServiceConfiguration.getServiceBinding().getPort().orElseThrow())
-                        .tags(platformServiceConfiguration.getServiceTags())
-                        .metadata(createMetadata(platformServiceConfiguration))
-                        .build()
-                )
+        getRegistryServiceDescriptionStream(platformServiceDescription, platformServiceConfiguration)
                 .forEach(service -> {
                     RegistryServiceIdentifier registryServiceIdentifier = registry.registerService(service);
 
@@ -78,6 +73,25 @@ public class DiffResolver implements Consumer<Diff> {
                                 "Service is paused");
                     }
                 });
+    }
+
+    private Stream<RegistryServiceDescription> getRegistryServiceDescriptionStream(
+            PlatformServiceDescription platformServiceDescription,
+            PlatformServiceConfiguration platformServiceConfiguration) {
+        return platformServiceConfiguration.getServiceNames().stream()
+                .peek(serviceName -> log.debug("Creating registry service {} for platform {}", serviceName,
+                        platformServiceConfiguration))
+                .map(serviceName -> RegistryServiceDescription.builder()
+                        .name(serviceName)
+                        .platformIdentifier(platformServiceDescription.getIdentifier().getPlatformIdentifier())
+                        .serviceIdentifier(ServiceIdentifier.of(platformServiceDescription.getIdentifier()
+                                .getPlatformIdentifier(), platformServiceConfiguration.getServiceBinding()))
+                        .address(platformServiceConfiguration.getServiceBinding().getIp())
+                        .port(platformServiceConfiguration.getServiceBinding().getPort().orElseThrow())
+                        .tags(platformServiceConfiguration.getServiceTags())
+                        .metadata(createMetadata(platformServiceConfiguration))
+                        .build()
+                );
     }
 
     public void updateServiceChecks(PlatformServiceDescription platformServiceDescription, PlatformServiceConfiguration serviceConfiguration, RegistryServiceIdentifier registryServiceIdentifier) {

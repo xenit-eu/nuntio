@@ -10,4 +10,5 @@ public class EqualService implements Diff {
     PlatformServiceDescription description;
     PlatformServiceConfiguration serviceConfiguration;
     RegistryServiceIdentifier registryServiceIdentifier;
+    RegistryServiceDescription registryServiceDescription;
 }

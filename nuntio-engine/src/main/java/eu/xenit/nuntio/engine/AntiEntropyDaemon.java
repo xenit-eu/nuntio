@@ -2,6 +2,7 @@ package eu.xenit.nuntio.engine;
 
 import eu.xenit.nuntio.api.platform.PlatformServiceDescription;
 import eu.xenit.nuntio.api.platform.ServicePlatform;
+import eu.xenit.nuntio.api.registry.RegistryServiceDescription;
 import eu.xenit.nuntio.api.registry.RegistryServiceIdentifier;
 import eu.xenit.nuntio.api.registry.ServiceRegistry;
 import eu.xenit.nuntio.engine.EngineProperties.AntiEntropyProperties;
@@ -12,6 +13,7 @@ import eu.xenit.nuntio.engine.diff.DiffService;
 import eu.xenit.nuntio.engine.diff.RemoveService;
 import eu.xenit.nuntio.engine.metrics.DiffOperationMetrics;
 import java.time.Duration;
+import java.util.Map;
 import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,10 +37,10 @@ public class AntiEntropyDaemon implements SchedulingConfigurer {
         try {
             log.debug("Running anti-entropy");
 
-            Set<? extends RegistryServiceIdentifier> registryServiceIdentifiers = registry.findServices();
+            Map<? extends RegistryServiceIdentifier, RegistryServiceDescription> registryServiceDescriptions = registry.findServiceDescriptions();
             Set<? extends PlatformServiceDescription> platformServiceDescriptions = platform.findAll();
 
-            diffService.diff(registryServiceIdentifiers, platformServiceDescriptions)
+            diffService.diff(registryServiceDescriptions, platformServiceDescriptions)
                     .peek(antiEntropyMetrics)
                     .peek(diff -> {
                         diff.cast(AddService.class).ifPresent(addService -> {

@@ -5,6 +5,8 @@ import eu.xenit.nuntio.api.identifier.ServiceIdentifier;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -13,6 +15,7 @@ import lombok.Value;
 
 @Value
 @Builder
+@AllArgsConstructor(access = AccessLevel.PUBLIC)
 public class RegistryServiceDescription {
     @NonNull
     ServiceIdentifier serviceIdentifier;

@@ -323,4 +323,55 @@ class AntiEntropyDaemonTest {
         ), new ArrayList<>(serviceRegistry.getServices().values()));
 
     }
+
+    @Test
+    void updatesChangeInServiceName() {
+        var serviceIdentifier = FakeServiceIdentifier.create();
+        var serviceConfiguration = PlatformServiceConfiguration.builder()
+                .serviceBinding(ServiceBinding.fromPort(80))
+                .serviceName("proxy-front")
+                .build();
+        var service = SimplePlatformServiceDescription.builder()
+                .identifier(serviceIdentifier)
+                .state(PlatformServiceState.RUNNING)
+                .serviceConfiguration(serviceConfiguration)
+                .build();
+        servicePlatform.createService(service);
+
+        antiEntropyDaemon.runAntiEntropy();
+
+        assertEquals(Arrays.asList(
+                RegistryServiceDescription.builder()
+                        .platformIdentifier(serviceIdentifier.getPlatformIdentifier())
+                        .serviceIdentifier(ServiceIdentifier.of(serviceIdentifier.getPlatformIdentifier(), serviceConfiguration.getServiceBinding()))
+                        .name("proxy-front")
+                        .port("80")
+                        .build()
+
+        ), new ArrayList<>(serviceRegistry.getServices().values()));
+
+        var serviceConfigurationWithOtherName = PlatformServiceConfiguration.builder()
+                .serviceBinding(ServiceBinding.fromPort(80))
+                .serviceName("proxy-front-alt")
+                .build();
+        var serviceWithOtherName = SimplePlatformServiceDescription.builder()
+                .identifier(serviceIdentifier)
+                .state(PlatformServiceState.RUNNING)
+                .serviceConfiguration(serviceConfigurationWithOtherName)
+                .build();
+        servicePlatform.createService(serviceWithOtherName);
+
+        antiEntropyDaemon.runAntiEntropy();
+
+        assertEquals(Arrays.asList(
+                RegistryServiceDescription.builder()
+                        .platformIdentifier(serviceIdentifier.getPlatformIdentifier())
+                        .serviceIdentifier(ServiceIdentifier.of(serviceIdentifier.getPlatformIdentifier(), serviceConfigurationWithOtherName.getServiceBinding()))
+                        .name("proxy-front-alt")
+                        .port("80")
+                        .build()
+
+        ), new ArrayList<>(serviceRegistry.getServices().values()));
+
+    }
 }
