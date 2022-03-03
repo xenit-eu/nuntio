@@ -84,7 +84,7 @@ public class ConsulRegistry implements ServiceRegistry {
 
             log.trace("Consul service object: {}", newService);
             consulClient.agentServiceRegister(newService, consulConfig.getToken());
-            log.debug("Registered service {}", description);
+            log.info("Registered service {}", description);
 
             return consulServiceIdentifier;
         });
@@ -97,7 +97,7 @@ public class ConsulRegistry implements ServiceRegistry {
                 log.debug("Deregistering service {}", serviceIdentifier);
                 var consulServiceIdentifier = (ConsulServiceIdentifier) serviceIdentifier;
                 consulClient.agentServiceDeregister(consulServiceIdentifier.getServiceId(), consulConfig.getToken());
-                log.debug("Deregistered service {}", serviceIdentifier);
+                log.info("Deregistered service {}", serviceIdentifier);
             });
         }
     }
