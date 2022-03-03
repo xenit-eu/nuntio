@@ -16,13 +16,13 @@ public interface ServiceRegistry {
         return findServices()
                 .stream()
                 .filter(serviceIdentifier -> Objects.equals(serviceIdentifier.getPlatformIdentifier(), sharedIdentifier))
-                .collect(Collectors.toSet());
+                .collect(Collectors.toUnmodifiableSet());
     }
 
     default Map<? extends RegistryServiceIdentifier, RegistryServiceDescription> findServiceDescriptions(PlatformIdentifier sharedIdentifier) {
         return findServices(sharedIdentifier)
                 .stream()
-                .collect(Collectors.toMap(Function.identity(), sid -> findServiceDescription(sid).orElseThrow()));
+                .collect(Collectors.toUnmodifiableMap(Function.identity(), sid -> findServiceDescription(sid).orElseThrow()));
     }
 
     Optional<RegistryServiceDescription> findServiceDescription(RegistryServiceIdentifier serviceIdentifier);
@@ -30,7 +30,7 @@ public interface ServiceRegistry {
     default Map<? extends RegistryServiceIdentifier, RegistryServiceDescription> findServiceDescriptions() {
         return findServices()
                 .stream()
-                .collect(Collectors.toMap(Function.identity(), sid -> findServiceDescription(sid).orElseThrow()));
+                .collect(Collectors.toUnmodifiableMap(Function.identity(), sid -> findServiceDescription(sid).orElseThrow()));
     }
 
     RegistryServiceIdentifier registerService(RegistryServiceDescription description);

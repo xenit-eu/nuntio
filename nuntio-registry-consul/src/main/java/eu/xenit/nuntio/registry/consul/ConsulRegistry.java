@@ -38,7 +38,7 @@ public class ConsulRegistry implements ServiceRegistry {
 
     private Optional<ConsulServiceIdentifier> mapConsulServiceToServiceIdentifier(Service service) {
         return Optional.ofNullable(service.getMeta().get(NUNTIO_SID))
-                .map(sid -> ServiceIdentifier.parse(sid))
+                .map(ServiceIdentifier::parse)
                 .map(sid -> new ConsulServiceIdentifier(service.getService(), service.getId(), sid));
     }
 
