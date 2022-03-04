@@ -79,7 +79,7 @@ public class LiveWatchDaemon implements Runnable {
             case START:
                 platform.find(platformServiceEvent.getIdentifier())
                         .ifPresentOrElse(platformServiceDescription -> {
-                            diffService.diff(Collections.emptySet(), Collections.singleton(platformServiceDescription))
+                            diffService.diff(Collections.emptyMap(), Collections.singleton(platformServiceDescription))
                                     .filter(diff -> diff.cast(AddService.class).isPresent())
                                     .peek(liveWatchMetrics)
                                     .peek(diff -> {
@@ -95,7 +95,7 @@ public class LiveWatchDaemon implements Runnable {
             case HEALTHCHECK:
                 platform.find(platformServiceEvent.getIdentifier())
                         .ifPresentOrElse(platformServiceDescription -> {
-                            var registeredServices = registry.findAll(platformServiceDescription.getIdentifier().getPlatformIdentifier());
+                            var registeredServices = registry.findServiceDescriptions(platformServiceDescription.getIdentifier().getPlatformIdentifier());
                             log.debug("Updating service information for platform {} on services {}", platformServiceDescription, registeredServices);
                             diffService.diff(registeredServices, Collections.singleton(platformServiceDescription))
                                     .filter(diff -> diff.cast(EqualService.class).isPresent())
@@ -104,7 +104,7 @@ public class LiveWatchDaemon implements Runnable {
                         }, () -> log.error("Failed to register platform service {}: does no longer exist", platformServiceEvent.getIdentifier()));
                 break;
             case STOP:
-                var registeredServices = registry.findAll(platformServiceEvent.getIdentifier().getPlatformIdentifier());
+                var registeredServices = registry.findServiceDescriptions(platformServiceEvent.getIdentifier().getPlatformIdentifier());
                 diffService.diff(registeredServices, Collections.emptySet())
                         .filter(diff -> diff.cast(RemoveService.class).isPresent())
                         .peek(liveWatchMetrics)

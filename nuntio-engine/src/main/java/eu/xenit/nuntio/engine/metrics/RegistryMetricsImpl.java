@@ -1,8 +1,10 @@
 package eu.xenit.nuntio.engine.metrics;
 
+import eu.xenit.nuntio.api.registry.RegistryServiceDescription;
 import eu.xenit.nuntio.api.registry.RegistryServiceIdentifier;
 import eu.xenit.nuntio.api.registry.metrics.RegistryMetrics;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -26,6 +28,12 @@ public class RegistryMetricsImpl implements RegistryMetrics {
     @Override
     public Set<? extends RegistryServiceIdentifier> findServices(
             Supplier<? extends Set<? extends RegistryServiceIdentifier>> runnable) {
+        return findServicesMetrics.record(runnable);
+    }
+
+    @Override
+    public Map<? extends RegistryServiceIdentifier, RegistryServiceDescription> findServiceDescriptions(
+            Supplier<? extends Map<? extends RegistryServiceIdentifier, RegistryServiceDescription>> runnable) {
         return findServicesMetrics.record(runnable);
     }
 

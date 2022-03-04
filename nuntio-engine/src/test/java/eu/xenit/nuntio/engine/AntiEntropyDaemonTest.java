@@ -1,5 +1,7 @@
 package eu.xenit.nuntio.engine;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -21,6 +23,9 @@ import eu.xenit.nuntio.platform.fake.FakeServicePlatform;
 import eu.xenit.nuntio.registry.fake.FakeCheck;
 import eu.xenit.nuntio.registry.fake.FakeRegistryConfiguration;
 import eu.xenit.nuntio.registry.fake.FakeServiceRegistry;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Metrics;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -60,6 +65,9 @@ class AntiEntropyDaemonTest {
 
     @Autowired
     AntiEntropyDaemon antiEntropyDaemon;
+
+    @Autowired
+    MeterRegistry meterRegistry;
 
     @BeforeEach
     void resetServices() {
@@ -322,5 +330,69 @@ class AntiEntropyDaemonTest {
 
         ), new ArrayList<>(serviceRegistry.getServices().values()));
 
+    }
+
+    @Test
+    void updatesChangeInServiceName() {
+        var serviceIdentifier = FakeServiceIdentifier.create();
+        var serviceConfiguration = PlatformServiceConfiguration.builder()
+                .serviceBinding(ServiceBinding.fromPort(80))
+                .serviceName("proxy-front")
+                .build();
+        var service = SimplePlatformServiceDescription.builder()
+                .identifier(serviceIdentifier)
+                .state(PlatformServiceState.RUNNING)
+                .serviceConfiguration(serviceConfiguration)
+                .build();
+        servicePlatform.createService(service);
+
+        antiEntropyDaemon.runAntiEntropy();
+
+        double initialAntiEntropyOps = countAntiEntropyInterventions();
+
+        assertEquals(Arrays.asList(
+                RegistryServiceDescription.builder()
+                        .platformIdentifier(serviceIdentifier.getPlatformIdentifier())
+                        .serviceIdentifier(ServiceIdentifier.of(serviceIdentifier.getPlatformIdentifier(), serviceConfiguration.getServiceBinding()))
+                        .name("proxy-front")
+                        .port("80")
+                        .build()
+
+        ), new ArrayList<>(serviceRegistry.getServices().values()));
+
+        var serviceConfigurationWithOtherName = PlatformServiceConfiguration.builder()
+                .serviceBinding(ServiceBinding.fromPort(80))
+                .serviceName("proxy-front-alt")
+                .build();
+        var serviceWithOtherName = SimplePlatformServiceDescription.builder()
+                .identifier(serviceIdentifier)
+                .state(PlatformServiceState.RUNNING)
+                .serviceConfiguration(serviceConfigurationWithOtherName)
+                .build();
+        servicePlatform.createService(serviceWithOtherName);
+
+        antiEntropyDaemon.runAntiEntropy();
+
+        assertEquals(Arrays.asList(
+                RegistryServiceDescription.builder()
+                        .platformIdentifier(serviceIdentifier.getPlatformIdentifier())
+                        .serviceIdentifier(ServiceIdentifier.of(serviceIdentifier.getPlatformIdentifier(), serviceConfigurationWithOtherName.getServiceBinding()))
+                        .name("proxy-front-alt")
+                        .port("80")
+                        .build()
+
+        ), new ArrayList<>(serviceRegistry.getServices().values()));
+
+        assertThat("Some anti-entropy interventions have taken place", countAntiEntropyInterventions(), greaterThan(initialAntiEntropyOps));
+    }
+
+    private double countAntiEntropyInterventions() {
+        return meterRegistry.get("nuntio.engine.operation")
+                .tag("engine", "anti-entropy")
+                .counters()
+                .stream()
+                .filter(c -> !c.getId().getTag("operation").equals("update"))
+                .mapToDouble(Counter::count)
+                .sum();
     }
 }

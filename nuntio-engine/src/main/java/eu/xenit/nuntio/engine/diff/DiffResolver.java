@@ -1,17 +1,14 @@
 package eu.xenit.nuntio.engine.diff;
 
-import eu.xenit.nuntio.api.identifier.ServiceIdentifier;
 import eu.xenit.nuntio.api.platform.PlatformServiceConfiguration;
 import eu.xenit.nuntio.api.platform.PlatformServiceDescription;
 import eu.xenit.nuntio.api.platform.PlatformServiceState;
 import eu.xenit.nuntio.api.registry.CheckStatus;
 import eu.xenit.nuntio.api.registry.CheckType;
-import eu.xenit.nuntio.api.registry.RegistryServiceDescription;
 import eu.xenit.nuntio.api.registry.RegistryServiceIdentifier;
 import eu.xenit.nuntio.api.registry.ServiceRegistry;
 import eu.xenit.nuntio.engine.EngineProperties;
-import java.util.HashMap;
-import java.util.Map;
+import eu.xenit.nuntio.engine.mapper.PlatformToRegistryMapper;
 import java.util.function.Consumer;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,8 +19,7 @@ public class DiffResolver implements Consumer<Diff> {
 
     private ServiceRegistry registry;
     private EngineProperties engineProperties;
-
-    private static final String NUNTIO_RESERVED_PREFIX = "nuntio-";
+    private PlatformToRegistryMapper platformToRegistryMapper;
 
     @Override
     public void accept(Diff diff) {
@@ -41,20 +37,7 @@ public class DiffResolver implements Consumer<Diff> {
     }
 
     private void registerService(PlatformServiceDescription platformServiceDescription, PlatformServiceConfiguration platformServiceConfiguration) {
-        platformServiceConfiguration.getServiceNames().stream()
-                .peek(serviceName -> log.debug("Creating registry service {} for platform {}", serviceName,
-                        platformServiceConfiguration))
-                .map(serviceName -> RegistryServiceDescription.builder()
-                        .name(serviceName)
-                        .platformIdentifier(platformServiceDescription.getIdentifier().getPlatformIdentifier())
-                        .serviceIdentifier(ServiceIdentifier.of(platformServiceDescription.getIdentifier()
-                                .getPlatformIdentifier(), platformServiceConfiguration.getServiceBinding()))
-                        .address(platformServiceConfiguration.getServiceBinding().getIp())
-                        .port(platformServiceConfiguration.getServiceBinding().getPort().orElseThrow())
-                        .tags(platformServiceConfiguration.getServiceTags())
-                        .metadata(createMetadata(platformServiceConfiguration))
-                        .build()
-                )
+        platformToRegistryMapper.registryServiceDescriptionsFor(platformServiceDescription, platformServiceConfiguration)
                 .forEach(service -> {
                     RegistryServiceIdentifier registryServiceIdentifier = registry.registerService(service);
 
@@ -97,26 +80,6 @@ public class DiffResolver implements Consumer<Diff> {
         } else {
             registry.unregisterCheck(registryServiceIdentifier, CheckType.PAUSE);
         }
-    }
-
-
-    private Map<String, String> createMetadata(PlatformServiceConfiguration configuration) {
-        final var serviceMetadata = configuration.getServiceMetadata();
-        final var internalMetadata = configuration.getInternalMetadata();
-        Map<String, String> allMetadata = new HashMap<>(serviceMetadata.size() + internalMetadata.size());
-        serviceMetadata.forEach((key, value) -> {
-            if (!key.startsWith(NUNTIO_RESERVED_PREFIX)) {
-                allMetadata.put(key, value);
-            } else {
-                log.warn(
-                        "Platform configuration {} specified invalid metadata. Metadata key {} is reserved.",
-                        configuration, key);
-            }
-        });
-        internalMetadata.forEach((key, value) -> {
-            allMetadata.put(NUNTIO_RESERVED_PREFIX + key, value);
-        });
-        return allMetadata;
     }
 
 

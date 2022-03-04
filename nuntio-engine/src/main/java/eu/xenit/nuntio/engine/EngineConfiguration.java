@@ -8,6 +8,7 @@ import eu.xenit.nuntio.engine.availability.AvailabilityManager;
 import eu.xenit.nuntio.engine.diff.DiffResolver;
 import eu.xenit.nuntio.engine.diff.DiffService;
 import eu.xenit.nuntio.engine.diff.InitialRegistrationResolver;
+import eu.xenit.nuntio.engine.mapper.PlatformToRegistryMapper;
 import eu.xenit.nuntio.engine.metrics.LiveWatchMetrics;
 import eu.xenit.nuntio.engine.metrics.DiffOperationMetrics;
 import eu.xenit.nuntio.engine.metrics.MetricsFactory;
@@ -67,13 +68,18 @@ public class EngineConfiguration {
     }
 
     @Bean
-    DiffService diffService(List<PlatformServicePostProcessor> platformServicePostProcessorList) {
-        return new DiffService(platformServicePostProcessorList);
+    PlatformToRegistryMapper platformToRegistryMapper() {
+        return new PlatformToRegistryMapper();
     }
 
     @Bean
-    DiffResolver diffResolver(ServiceRegistry registry, EngineProperties engineProperties)  {
-        return new DiffResolver(registry, engineProperties);
+    DiffService diffService(PlatformToRegistryMapper platformToRegistryMapper, List<PlatformServicePostProcessor> platformServicePostProcessorList) {
+        return new DiffService(platformToRegistryMapper, platformServicePostProcessorList);
+    }
+
+    @Bean
+    DiffResolver diffResolver(ServiceRegistry registry, EngineProperties engineProperties, PlatformToRegistryMapper platformToRegistryMapper)  {
+        return new DiffResolver(registry, engineProperties, platformToRegistryMapper);
     }
 
     @Bean

@@ -1,5 +1,7 @@
 package eu.xenit.nuntio.registry.consul;
 
+import com.ecwid.consul.v1.agent.model.Service;
+import eu.xenit.nuntio.api.identifier.PlatformIdentifier;
 import eu.xenit.nuntio.api.identifier.ServiceIdentifier;
 import eu.xenit.nuntio.api.registry.CheckStatus;
 import eu.xenit.nuntio.api.registry.CheckType;
@@ -15,7 +17,10 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -31,18 +36,60 @@ public class ConsulRegistry implements ServiceRegistry {
     private ConsulProperties consulConfig;
     private RegistryMetrics registryMetrics;
 
+    private Optional<ConsulServiceIdentifier> mapConsulServiceToServiceIdentifier(Service service) {
+        return Optional.ofNullable(service.getMeta().get(NUNTIO_SID))
+                .map(ServiceIdentifier::parse)
+                .map(sid -> new ConsulServiceIdentifier(service.getService(), service.getId(), sid));
+    }
+
     @Override
     public Set<? extends RegistryServiceIdentifier> findServices() {
-        return registryMetrics.findServices(() ->consulClient.getAgentServices()
+        return registryMetrics.findServices(() -> consulClient.getAgentServices()
                 .getValue()
                 .values()
                 .stream()
-                .filter(service -> service.getMeta().containsKey(NUNTIO_SID))
-                .map(service -> new ConsulServiceIdentifier(service.getService(), service.getId(),
-                        ServiceIdentifier.parse(service.getMeta().get(NUNTIO_SID))
-                ))
+                .map(this::mapConsulServiceToServiceIdentifier)
+                .flatMap(Optional::stream)
                 .collect(Collectors.toSet())
         );
+    }
+
+    @Override
+    public Map<? extends RegistryServiceIdentifier, RegistryServiceDescription> findServiceDescriptions(PlatformIdentifier sharedIdentifier) {
+        return findServiceDescriptions()
+                .entrySet()
+                .stream()
+                .filter(service -> Objects.equals(service.getKey().getPlatformIdentifier(), sharedIdentifier))
+                .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+    }
+
+    public Map<? extends RegistryServiceIdentifier, RegistryServiceDescription> findServiceDescriptions() {
+        return registryMetrics.findServiceDescriptions(() -> consulClient.getAgentServices()
+                .getValue()
+                .values()
+                .stream()
+                .flatMap(consulService -> mapConsulServiceToServiceIdentifier(consulService)
+                        .map(sid -> Map.entry(sid, new RegistryServiceDescription(
+                                sid.getServiceIdentifier(),
+                                sid.getPlatformIdentifier(),
+                                consulService.getService(),
+                                Optional.ofNullable(consulService.getAddress()),
+                                Integer.toString(consulService.getPort()),
+                                new HashSet<>(consulService.getTags()),
+                                consulService.getMeta()
+                        )))
+                        .stream())
+                .collect(Collectors.toUnmodifiableMap(Entry::getKey, Entry::getValue))
+        );
+    }
+
+    @Override
+    public Optional<RegistryServiceDescription> findServiceDescription(RegistryServiceIdentifier serviceIdentifier) {
+        if(serviceIdentifier instanceof ConsulServiceIdentifier) {
+            return Optional.ofNullable(findServiceDescriptions().get(serviceIdentifier));
+        } else {
+            return Optional.empty();
+        }
     }
 
     private String extractServiceAddress(RegistryServiceDescription description) {

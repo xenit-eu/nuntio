@@ -8,6 +8,7 @@ import eu.xenit.nuntio.api.registry.ServiceRegistry;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.Value;
@@ -35,6 +36,15 @@ public class FakeServiceRegistry implements ServiceRegistry {
     @Override
     public Set<? extends RegistryServiceIdentifier> findServices() {
         return services.keySet();
+    }
+
+    @Override
+    public Optional<RegistryServiceDescription> findServiceDescription(RegistryServiceIdentifier serviceIdentifier) {
+        if(serviceIdentifier instanceof FakeServiceIdentifier) {
+            return Optional.ofNullable(services.get(serviceIdentifier));
+        } else {
+            return Optional.empty();
+        }
     }
 
     @Override

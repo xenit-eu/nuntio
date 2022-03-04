@@ -21,9 +21,8 @@ dependencies {
     implementation 'io.micrometer:micrometer-registry-prometheus'
 
 
-    testAnnotationProcessor 'org.projectlombok:lombok:1.18.20'
-    testCompileOnly 'org.projectlombok:lombok:1.18.20'
-
+    testImplementation project(':nuntio-api')
+    testImplementation project(':nuntio-engine')
     testImplementation platform('org.testcontainers:testcontainers-bom:1.16.0')
     testImplementation 'org.testcontainers:junit-jupiter'
     testImplementation 'com.ecwid.consul:consul-api:1.4.5'
