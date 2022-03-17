@@ -1,9 +1,9 @@
 package eu.xenit.nuntio.platform.docker.config.parser;
 
+import com.github.dockerjava.api.command.InspectContainerResponse;
 import com.github.dockerjava.api.model.NetworkSettings;
 import com.github.dockerjava.api.model.Ports;
 import eu.xenit.nuntio.api.platform.ServiceBinding;
-import com.github.dockerjava.api.command.InspectContainerResponse;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -17,6 +17,11 @@ import lombok.AllArgsConstructor;
 public class InspectContainerMetadata implements ContainerMetadata {
 
     private final InspectContainerResponse inspectContainerResponse;
+
+    @Override
+    public String getContainerName() {
+        return inspectContainerResponse.getName().substring(1);
+    }
 
     @Override
     public String getImageName() {

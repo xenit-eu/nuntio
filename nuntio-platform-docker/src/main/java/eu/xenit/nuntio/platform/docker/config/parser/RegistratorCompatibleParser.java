@@ -2,7 +2,6 @@ package eu.xenit.nuntio.platform.docker.config.parser;
 
 import eu.xenit.nuntio.api.platform.PlatformServiceConfiguration;
 import eu.xenit.nuntio.api.platform.ServiceBinding;
-import eu.xenit.nuntio.platform.docker.DockerProperties;
 import eu.xenit.nuntio.platform.docker.DockerProperties.PortBindConfiguration;
 import eu.xenit.nuntio.platform.docker.DockerProperties.RegistratorCompatibleProperties;
 import java.util.HashMap;
@@ -16,6 +15,8 @@ import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
+import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -31,6 +32,19 @@ public class RegistratorCompatibleParser implements ServiceConfigurationParser {
     PortBindConfiguration portBindConfiguration;
     RegistratorCompatibleProperties registratorCompatibleProperties;
 
+    @Value
+    @ToString(onlyExplicitlyIncluded = true)
+    private static class ContainerWithServiceBinding {
+        ContainerMetadata containerMetadata;
+        @ToString.Include
+        ServiceBinding serviceBinding;
+
+        @ToString.Include(name = "container", rank = 1)
+        private String getContainerName() {
+            return containerMetadata.getContainerName();
+        }
+    }
+
     @Override
     public Set<PlatformServiceConfiguration> toServiceConfigurations(ContainerMetadata containerMetadata) {
         Map<String, String> configuration = new HashMap<>();
@@ -38,16 +52,18 @@ public class RegistratorCompatibleParser implements ServiceConfigurationParser {
         configuration.putAll(containerMetadata.getLabels());
 
         Set<ServiceBinding> serviceBindings = portBindConfiguration == PortBindConfiguration.INTERNAL?containerMetadata.getExposedPortBindings():containerMetadata.getPublishedPortBindings();
+        log.debug("Container {} has relevant service bindings {}", containerMetadata.getContainerName(), serviceBindings);
         boolean hasMultipleBindings = serviceBindings.size() > 1;
 
         Set<PlatformServiceConfiguration> platformServiceConfigurations = new HashSet<>();
         for(ServiceBinding serviceBinding: serviceBindings) {
+            ContainerWithServiceBinding containerWithServiceBinding = new ContainerWithServiceBinding(containerMetadata, serviceBinding);
             // If SERVICE_<port>_IGNORE or SERVICE_IGNORE is present and not empty, disregard this service
             boolean isIgnore = findValueWithFallback(ConfigKind.IGNORE, serviceBinding, configuration)
                     .filter(Predicate.not(String::isEmpty))
                     .isPresent();
             if(isIgnore) {
-                log.debug("Service binding {} is ignored", serviceBinding);
+                log.debug("{} is ignored", containerWithServiceBinding);
                 continue;
             }
 
@@ -63,12 +79,17 @@ public class RegistratorCompatibleParser implements ServiceConfigurationParser {
                     .or(() -> findValue(ConfigKind.SERVICE_NAME, ServiceBinding.ANY, configuration)
                             .map(defaultServiceName -> defaultServiceName + defaultServiceNameSuffix)
                     );
-            // Configurable deviation from registrator behavior to ignore containers by default
+            // Registrator explicit mode: ignore containers unless SERVICE_NAME is set
             if(registratorCompatibleProperties.isExplicit() && maybeServiceName.isEmpty()) {
-                log.debug("Service binding {} is ignored because no service name is configured", serviceBinding);
+                log.debug("{} is ignored because no service name is configured", containerWithServiceBinding);
                 continue;
             }
             String serviceName = maybeServiceName.orElseGet(() -> extractImageBaseName(containerMetadata.getImageName()) + defaultServiceNameSuffix);
+            if(maybeServiceName.isEmpty()) {
+                log.debug("Automatically set service name of {} to {} based on image name", containerWithServiceBinding, serviceName);
+            } else {
+                log.debug("Service name for {} is {}", containerWithServiceBinding, serviceName);
+            }
 
             platformServiceBuilder.serviceName(serviceName);
 

@@ -6,6 +6,8 @@ import java.util.Set;
 
 public interface ContainerMetadata {
 
+    String getContainerName();
+
     String getImageName();
 
     Set<ServiceBinding> getExposedPortBindings();
